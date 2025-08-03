@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: lionrocket
+  labels:
+    app: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: backend
+        image: lionrocket/backend:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: DATABASE_URL
+          value: "sqlite:///./data/lionrocket.db"
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: backend-secrets
+              key: secret-key
+        - name: CLAUDE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: backend-secrets
+              key: claude-api-key
+        - name: DEFAULT_ADMIN_USERNAME
+          value: "admin"
+        - name: DEFAULT_ADMIN_EMAIL
+          value: "admin@lionrocket.com"
+        - name: DEFAULT_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: backend-secrets
+              key: admin-password
+        volumeMounts:
+        - name: data
+          mountPath: /app/data
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: backend-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-service
+  namespace: lionrocket
+spec:
+  selector:
+    app: backend
+  ports:
+  - protocol: TCP
+    port: 8000
+    targetPort: 8000
+  type: ClusterIP

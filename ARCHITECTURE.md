@@ -43,8 +43,7 @@ lionrocket/
 ## 데이터베이스 설계
 
 ### ER 다이어그램
-```mermaid
-erDiagram
+```mermaiderDiagram
     users ||--o{ chats : creates
     users ||--o{ characters : creates
     users ||--o{ usage_stats : has

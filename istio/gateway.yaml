@@ -1,0 +1,98 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: lionrocket-gateway
+  namespace: lionrocket
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "*"
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    tls:
+      mode: SIMPLE
+      credentialName: lionrocket-tls
+    hosts:
+    - "lionrocket.example.com"
+  - port:
+      number: 50051
+      name: grpc
+      protocol: GRPC
+    hosts:
+    - "*"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: lionrocket-vs
+  namespace: lionrocket
+spec:
+  hosts:
+  - "*"
+  gateways:
+  - lionrocket-gateway
+  http:
+  # Frontend routes
+  - match:
+    - uri:
+        prefix: "/"
+    - headers:
+        ":path":
+          prefix: "/"
+    route:
+    - destination:
+        host: frontend-service
+        port:
+          number: 80
+  # Backend API routes
+  - match:
+    - uri:
+        prefix: "/api"
+    - uri:
+        prefix: "/auth"
+    - uri:
+        prefix: "/admin"
+    - uri:
+        prefix: "/docs"
+    - uri:
+        prefix: "/redoc"
+    - uri:
+        exact: "/openapi.json"
+    - uri:
+        exact: "/health"
+    route:
+    - destination:
+        host: backend-service
+        port:
+          number: 8000
+    timeout: 30s
+    retryPolicy:
+      attempts: 3
+      perTryTimeout: 10s
+      retryOn: 5xx,reset,connect-failure,refused-stream
+  # WebSocket route
+  - match:
+    - uri:
+        prefix: "/ws"
+    route:
+    - destination:
+        host: backend-service
+        port:
+          number: 8000
+    websocketUpgrade: true
+  # gRPC routes
+  - match:
+    - port: 50051
+    route:
+    - destination:
+        host: grpc-service
+        port:
+          number: 50051

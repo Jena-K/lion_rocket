@@ -2,7 +2,18 @@
   "permissions": {
     "allow": [
       "Bash(git init:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git remote add:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "Bash(ls:*)",
+      "Bash(rm:*)",
+      "mcp__sequential-thinking__sequentialthinking",
+      "Bash(dir)",
+      "Bash(mkdir:*)",
+      "Bash(find:*)",
+      "mcp__magic__21st_magic_component_builder"
     ],
     "deny": []
   }

@@ -1,0 +1,34 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: jaeger-vs
+  namespace: lionrocket
+spec:
+  hosts:
+  - jaeger.lionrocket.local
+  gateways:
+  - lionrocket-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /jaeger
+    route:
+    - destination:
+        host: jaeger-query
+        port:
+          number: 16686
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: jaeger-dr
+  namespace: lionrocket
+spec:
+  host: jaeger-query
+  trafficPolicy:
+    connectionPool:
+      tcp:
+        maxConnections: 100
+      http:
+        http1MaxPendingRequests: 10
+        http2MaxRequests: 100

@@ -1,0 +1,94 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: lionrocket-ingress
+  namespace: lionrocket
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "30"
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "30"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "30"
+    # WebSocket support
+    nginx.ingress.kubernetes.io/websocket-services: "backend-service"
+    nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: lionrocket.example.com  # Change this to your domain
+    http:
+      paths:
+      # Frontend
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend-service
+            port:
+              number: 80
+      # Backend API
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: backend-service
+            port:
+              number: 8000
+      # Auth endpoints
+      - path: /auth
+        pathType: Prefix
+        backend:
+          service:
+            name: backend-service
+            port:
+              number: 8000
+      # Admin endpoints
+      - path: /admin
+        pathType: Prefix
+        backend:
+          service:
+            name: backend-service
+            port:
+              number: 8000
+      # WebSocket
+      - path: /ws
+        pathType: Prefix
+        backend:
+          service:
+            name: backend-service
+            port:
+              number: 8000
+      # API Documentation
+      - path: /docs
+        pathType: Prefix
+        backend:
+          service:
+            name: backend-service
+            port:
+              number: 8000
+      - path: /redoc
+        pathType: Prefix
+        backend:
+          service:
+            name: backend-service
+            port:
+              number: 8000
+      - path: /openapi.json
+        pathType: Exact
+        backend:
+          service:
+            name: backend-service
+            port:
+              number: 8000
+      # Health check
+      - path: /health
+        pathType: Exact
+        backend:
+          service:
+            name: backend-service
+            port:
+              number: 8000
+  tls:
+  - hosts:
+    - lionrocket.example.com
+    secretName: lionrocket-tls

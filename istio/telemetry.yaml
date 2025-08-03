@@ -1,0 +1,54 @@
+apiVersion: telemetry.istio.io/v1alpha1
+kind: Telemetry
+metadata:
+  name: lionrocket-metrics
+  namespace: lionrocket
+spec:
+  metrics:
+  - providers:
+    - name: prometheus
+    overrides:
+    - match:
+        metric: REQUEST_COUNT
+      tagOverrides:
+        method:
+          value: request.method | "unknown"
+        response_code:
+          value: response.code | 0
+        grpc_response_status:
+          value: response.grpc_status | 0
+    - match:
+        metric: REQUEST_DURATION
+      tagOverrides:
+        method:
+          value: request.method | "unknown"
+---
+apiVersion: telemetry.istio.io/v1alpha1
+kind: Telemetry
+metadata:
+  name: lionrocket-access-logging
+  namespace: lionrocket
+spec:
+  accessLogging:
+  - providers:
+    - name: file
+    filter:
+      expression: 'response.code >= 400 || request.method == "POST" || request.method == "PUT" || request.method == "DELETE"'
+---
+apiVersion: telemetry.istio.io/v1alpha1
+kind: Telemetry
+metadata:
+  name: lionrocket-tracing
+  namespace: lionrocket
+spec:
+  tracing:
+  - providers:
+    - name: jaeger
+    randomSamplingPercentage: 100.0  # Sample all requests in dev, reduce in prod
+    customTags:
+      user_id:
+        header:
+          name: x-user-id
+      request_id:
+        header:
+          name: x-request-id

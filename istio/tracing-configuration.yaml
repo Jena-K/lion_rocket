@@ -1,0 +1,39 @@
+# Configure Istio to send traces to Jaeger
+apiVersion: v1
+data:
+  mesh: |
+    defaultConfig:
+      proxyStatsMatcher:
+        inclusionRegexps:
+        - ".*circuit_breakers.*"
+        - ".*upstream_rq_retry.*"
+        - ".*upstream_rq_pending.*"
+        - ".*membership_change.*"
+        - ".*membership_total.*"
+        - ".*_cx_.*"
+        - ".*osconfig.*"
+        - ".*outlier_detection.*"
+      extensionProviders:
+      - name: jaeger
+        envoyOtelAls:
+          service: jaeger-collector.lionrocket.svc.cluster.local
+          port: 4317
+      - name: prometheus
+        prometheus:
+          service: prometheus.istio-system.svc.cluster.local
+          port: 9090
+      - name: file
+        file:
+          path: "/dev/stdout"
+      defaultProviders:
+        tracing:
+        - jaeger
+        metrics:
+        - prometheus
+        accessLogging:
+        - file
+    meshNetworks: {}
+kind: ConfigMap
+metadata:
+  name: istio
+  namespace: istio-system

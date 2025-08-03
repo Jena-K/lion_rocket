@@ -1,0 +1,130 @@
+from datetime import datetime, date
+from typing import Optional, List
+from sqlalchemy.orm import Session
+from sqlalchemy import func
+from app.models import Chat, Message, UsageStat
+from app.schemas import MessageRole
+
+
+class ChatService:
+    """Service for managing chat operations and usage tracking"""
+
+    @staticmethod
+    def create_chat(db: Session, user_id: int, character_id: int) -> Chat:
+        """Create a new chat session"""
+        chat = Chat(user_id=user_id, character_id=character_id, last_message_at=datetime.utcnow())
+        db.add(chat)
+        db.commit()
+        db.refresh(chat)
+        return chat
+
+    @staticmethod
+    def get_user_chats(db: Session, user_id: int, skip: int = 0, limit: int = 20) -> List[Chat]:
+        """Get all chats for a user with pagination"""
+        return (
+            db.query(Chat)
+            .filter(Chat.user_id == user_id)
+            .order_by(Chat.last_message_at.desc())
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
+
+    @staticmethod
+    def get_chat_by_id(db: Session, chat_id: int, user_id: int) -> Optional[Chat]:
+        """Get a specific chat if it belongs to the user"""
+        return db.query(Chat).filter(Chat.id == chat_id, Chat.user_id == user_id).first()
+
+    @staticmethod
+    def delete_chat(db: Session, chat_id: int, user_id: int) -> bool:
+        """Delete a chat if it belongs to the user"""
+        chat = db.query(Chat).filter(Chat.id == chat_id, Chat.user_id == user_id).first()
+
+        if chat:
+            db.delete(chat)
+            db.commit()
+            return True
+        return False
+
+    @staticmethod
+    def add_message(
+        db: Session, chat_id: int, role: MessageRole, content: str, token_count: int = 0
+    ) -> Message:
+        """Add a message to a chat"""
+        message = Message(chat_id=chat_id, role=role, content=content, token_count=token_count)
+        db.add(message)
+
+        # Update chat's last message time
+        chat = db.query(Chat).filter(Chat.id == chat_id).first()
+        if chat:
+            chat.last_message_at = datetime.utcnow()
+
+        db.commit()
+        db.refresh(message)
+        return message
+
+    @staticmethod
+    def get_chat_messages(db: Session, chat_id: int, limit: Optional[int] = None) -> List[Message]:
+        """Get messages for a chat, optionally limited to recent messages"""
+        query = (
+            db.query(Message).filter(Message.chat_id == chat_id).order_by(Message.created_at.asc())
+        )
+
+        if limit:
+            # Get the most recent messages but return in chronological order
+            messages = query.order_by(Message.created_at.desc()).limit(limit).all()
+            return list(reversed(messages))
+
+        return query.all()
+
+    @staticmethod
+    def update_usage_stats(db: Session, user_id: int, tokens_used: int) -> None:
+        """Update user's usage statistics for today"""
+        today = date.today()
+
+        # Get or create today's usage stat
+        usage_stat = (
+            db.query(UsageStat)
+            .filter(UsageStat.user_id == user_id, UsageStat.usage_date == today)
+            .first()
+        )
+
+        if not usage_stat:
+            usage_stat = UsageStat(user_id=user_id, usage_date=today, chat_count=0, total_tokens=0)
+            db.add(usage_stat)
+
+        # Update stats
+        usage_stat.chat_count += 1
+        usage_stat.total_tokens += tokens_used
+        db.commit()
+
+    @staticmethod
+    def get_user_usage_stats(
+        db: Session,
+        user_id: int,
+        start_date: Optional[date] = None,
+        end_date: Optional[date] = None,
+    ) -> List[UsageStat]:
+        """Get usage statistics for a user within a date range"""
+        query = db.query(UsageStat).filter(UsageStat.user_id == user_id)
+
+        if start_date:
+            query = query.filter(UsageStat.usage_date >= start_date)
+        if end_date:
+            query = query.filter(UsageStat.usage_date <= end_date)
+
+        return query.order_by(UsageStat.usage_date.desc()).all()
+
+    @staticmethod
+    def get_chat_count_for_user(db: Session, user_id: int) -> int:
+        """Get total number of chats for a user"""
+        return db.query(Chat).filter(Chat.user_id == user_id).count()
+
+    @staticmethod
+    def get_message_count_for_chat(db: Session, chat_id: int) -> int:
+        """Get total number of messages in a chat"""
+        return db.query(Message).filter(Message.chat_id == chat_id).count()
+
+
+# Singleton instance
+chat_service = ChatService()

@@ -1,10 +1,10 @@
-import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from app.models import Base
+from app.models.base import Base
+from app.core.config import settings
 
 # 데이터베이스 URL 설정
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./lionrocket.db")
+DATABASE_URL = settings.DATABASE_URL
 
 # SQLAlchemy 엔진 생성
 engine = create_engine(

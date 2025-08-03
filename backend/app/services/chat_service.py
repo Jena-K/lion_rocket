@@ -3,7 +3,7 @@ from typing import Optional, List
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from app.models import Chat, Message, UsageStat
-from app.schemas import MessageRole
+from app.schemas.chat import MessageRole
 
 
 class ChatService:

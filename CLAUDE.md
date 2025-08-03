@@ -8,8 +8,8 @@ This is a new project initialized with Claude Code.
 ## Project Structure
 ```
 lionrocket/
-├── CLAUDE.md          # This configuration file
-└── src/               # Source code directory
+├── backend
+└── frontends
 ```
 
 ## Development Guidelines

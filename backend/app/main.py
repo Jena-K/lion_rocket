@@ -81,7 +81,8 @@ app.add_middleware(LoggingMiddleware)
 async def startup_event():
     from sqlalchemy.orm import Session
     from app.database import SessionLocal
-    from app.models import User, Character
+    from app.models import User
+    from app.models import Character
     from app.auth.router import get_password_hash
     import os
 

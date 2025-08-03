@@ -1,0 +1,19 @@
+[project]
+name = "lionrocket-frontend"
+version = "1.0.0"
+description = "Lion Rocket AI Chat Service - Frontend"
+readme = "README.md"
+
+[tool.uv]
+# UV will manage Node.js dependencies through npm
+# This file is mainly for UV workspace integration
+
+[tool.uv.scripts]
+# Frontend-specific scripts
+install = "npm install"
+dev = "npm run dev"
+build = "npm run build"
+preview = "npm run preview"
+type-check = "npm run type-check"
+format = "npx prettier --write 'src/**/*.{ts,vue,js}'"
+lint = "npm run type-check"

@@ -1,5 +1,5 @@
-# Backend Dockerfile
-FROM python:3.11-slim
+# Backend Dockerfile - Python 3.11.0 with UV
+FROM python:3.11.0-slim
 
 # Set working directory
 WORKDIR /app
@@ -7,13 +7,19 @@ WORKDIR /app
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     gcc \
+    g++ \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements file
-COPY requirements.txt .
+# Install UV package manager
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="/root/.cargo/bin:$PATH"
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy dependency files
+COPY pyproject.toml uv.lock* ./
+
+# Install Python dependencies with UV
+RUN uv pip install --system -r pyproject.toml
 
 # Copy application files
 COPY . .

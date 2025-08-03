@@ -1,0 +1,168 @@
+name: Backend E2E Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-tests.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend-tests.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12']
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: testdb
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install UV
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+    
+    - name: Cache UV dependencies
+      uses: actions/cache@v3
+      with:
+        path: |
+          backend/.venv
+          ~/.cache/uv
+        key: ${{ runner.os }}-uv-${{ matrix.python-version }}-${{ hashFiles('backend/pyproject.toml') }}
+        restore-keys: |
+          ${{ runner.os }}-uv-${{ matrix.python-version }}-
+    
+    - name: Install dependencies
+      working-directory: ./backend
+      run: |
+        uv venv
+        source .venv/bin/activate
+        uv sync
+    
+    - name: Run linting
+      working-directory: ./backend
+      run: |
+        source .venv/bin/activate
+        ruff check app tests
+        black --check app tests
+    
+    - name: Run type checking
+      working-directory: ./backend
+      run: |
+        source .venv/bin/activate
+        mypy app --ignore-missing-imports
+    
+    - name: Run E2E tests with SQLite (Fast)
+      working-directory: ./backend
+      env:
+        TESTING: true
+        DATABASE_URL: sqlite:///:memory:
+        CLAUDE_API_KEY: test-api-key
+        JWT_SECRET: test-secret-key
+      run: |
+        source .venv/bin/activate
+        pytest tests/e2e -v --tb=short
+    
+    - name: Run E2E tests with PostgreSQL
+      working-directory: ./backend
+      env:
+        TESTING: true
+        DATABASE_URL: postgresql://testuser:testpass@localhost/testdb
+        CLAUDE_API_KEY: test-api-key
+        JWT_SECRET: test-secret-key
+      run: |
+        source .venv/bin/activate
+        pytest tests/e2e -v --tb=short -m "not slow"
+    
+    - name: Run all tests with coverage
+      working-directory: ./backend
+      env:
+        TESTING: true
+        DATABASE_URL: sqlite:///:memory:
+        CLAUDE_API_KEY: test-api-key
+        JWT_SECRET: test-secret-key
+      run: |
+        source .venv/bin/activate
+        pytest --cov=app --cov-report=xml --cov-report=html
+    
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./backend/coverage.xml
+        flags: backend
+        name: backend-coverage
+    
+    - name: Upload coverage HTML report
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: coverage-report-${{ matrix.python-version }}
+        path: backend/htmlcov/
+    
+    - name: Security scan with pip-audit
+      working-directory: ./backend
+      run: |
+        source .venv/bin/activate
+        pip-audit
+
+  performance-test:
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install UV
+      run: |
+        curl -LsSf https://astral.sh/uv/install.sh | sh
+        echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+    
+    - name: Install dependencies
+      working-directory: ./backend
+      run: |
+        uv venv
+        source .venv/bin/activate
+        uv sync
+    
+    - name: Run performance tests
+      working-directory: ./backend
+      env:
+        TESTING: true
+        DATABASE_URL: sqlite:///:memory:
+        CLAUDE_API_KEY: test-api-key
+        JWT_SECRET: test-secret-key
+      run: |
+        source .venv/bin/activate
+        # Add performance testing commands here
+        # For example: pytest tests/performance -v

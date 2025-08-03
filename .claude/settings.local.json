@@ -13,7 +13,12 @@
       "Bash(dir)",
       "Bash(mkdir:*)",
       "Bash(find:*)",
-      "mcp__magic__21st_magic_component_builder"
+      "mcp__magic__21st_magic_component_builder",
+      "Bash(chmod:*)",
+      "Bash(uv venv:*)",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__get-library-docs",
+      "Bash(python:*)"
     ],
     "deny": []
   }

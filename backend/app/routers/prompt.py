@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.auth.dependencies import get_current_user, require_admin
 from app.models import User, CommonPrompt
-from app.schemas import CommonPromptCreate, CommonPromptUpdate, CommonPromptResponse
+from app.schemas.prompt import CommonPromptCreate, CommonPromptUpdate, CommonPromptResponse
 
 router = APIRouter()
 

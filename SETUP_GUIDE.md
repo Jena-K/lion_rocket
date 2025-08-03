@@ -7,9 +7,8 @@
 ## 📋 사전 요구사항
 
 - Docker & Docker Compose
-- Node.js 18+ (로컬 개발 시)
+- Vue3 (로컬 개발 시)
 - Python 3.10+ (로컬 개발 시)
-- PostgreSQL (Docker 또는 로컬)
 
 ## 🚀 빠른 시작 (Docker)
 

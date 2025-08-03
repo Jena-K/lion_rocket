@@ -5,7 +5,7 @@ from sqlalchemy import func
 from app.database import get_db
 from app.auth.dependencies import get_current_user, require_admin
 from app.models import User, Character, Chat
-from app.schemas import CharacterCreate, CharacterResponse, CharacterWithStats, PaginatedResponse
+from app.schemas.character import CharacterCreate, CharacterResponse, CharacterWithStats, PaginatedResponse
 
 router = APIRouter()
 

@@ -8,11 +8,9 @@ import asyncio
 from datetime import datetime
 from sse_starlette.sse import EventSourceResponse
 
-from app.core.database import get_db
+from app.database import get_db
 from app.core.auth import get_current_user
-from app.models.user import User
-from app.models.chat import Chat, Message
-from app.models.character import Character
+from app.models import User, Chat, Message, Character
 from app.schemas.chat import (
     ChatCreate,
     ChatResponse,

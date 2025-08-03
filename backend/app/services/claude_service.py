@@ -3,7 +3,7 @@ import logging
 from typing import List, Dict, Optional, Tuple
 from anthropic import Anthropic, APIError, APIConnectionError, RateLimitError
 from app.models import Message, Character
-from app.schemas import MessageRole
+from app.schemas.chat import MessageRole
 
 logger = logging.getLogger(__name__)
 

@@ -7,8 +7,8 @@ from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
-from app.db.database import get_db
-from app.models.user import User
+from app.database import get_db
+from app.models import User
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -17,8 +17,8 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 # JWT settings
-SECRET_KEY = settings.SECRET_KEY
-ALGORITHM = "HS256"
+SECRET_KEY = settings.JWT_SECRET
+ALGORITHM = settings.JWT_ALGORITHM
 ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 
 

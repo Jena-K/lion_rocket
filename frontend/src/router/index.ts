@@ -11,7 +11,6 @@ const CharacterSelectionView = () => import('../views/CharacterSelectionView.vue
 const UserProfile = () => import('../views/UserProfile.vue')
 
 // Admin components
-const AdminOverview = () => import('../views/admin/AdminOverview.vue')
 const UserManagement = () => import('../views/admin/UserManagement.vue')
 const CharacterManagement = () => import('../views/admin/CharacterManagement.vue')
 const UserChatHistory = () => import('../views/admin/UserChatHistory.vue')
@@ -60,19 +59,15 @@ export const routes: RouteRecordRaw[] = [
   },
   {
     path: '/admin',
-    redirect: '/admin/dashboard',
+    redirect: '/admin/dashboard/users',
   },
   {
     path: '/admin/dashboard',
     name: 'admin-dashboard',
     component: AdminDashboard,
     meta: { requiresAuth: true, requiresAdmin: true },
+    redirect: '/admin/dashboard/users',
     children: [
-      {
-        path: '',
-        name: 'admin-overview',
-        component: AdminOverview,
-      },
       {
         path: 'users',
         name: 'admin-users',

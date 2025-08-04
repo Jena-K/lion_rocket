@@ -21,7 +21,7 @@ dependencies = [
     "pydantic-settings==2.1.0",
     "email-validator>=2.1.1",
     # Claude API
-    "anthropic==0.18.1",
+    "anthropic>=0.25.0",
     # HTTP Client
     "httpx==0.26.0",
     "aiofiles==23.2.1",
@@ -29,8 +29,6 @@ dependencies = [
     "fastapi-cors==0.0.6",
     # Rate limiting
     "slowapi==0.1.9",
-    # Server-Sent Events
-    "sse-starlette==1.8.2",
     # Date/Time
     "python-dateutil==2.8.2",
 ]

@@ -31,9 +31,6 @@ fastapi-cors==0.0.6
 # Rate limiting
 slowapi==0.1.9
 
-# Server-Sent Events
-sse-starlette==1.8.2
-
 # Date/Time
 python-dateutil==2.8.2
 

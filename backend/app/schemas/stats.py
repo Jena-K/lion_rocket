@@ -12,7 +12,6 @@ class UsageStatResponse(BaseModel):
     user_id: int
     usage_date: date
     chat_count: int
-    chat_count: int
     token_count: int
     input_tokens: int
     output_tokens: int
@@ -25,7 +24,6 @@ class UsageStatResponse(BaseModel):
 class UsageOverview(BaseModel):
     """Schema for usage overview/summary"""
     total_chats: int
-    total_chats: int
     total_tokens: int
     total_input_tokens: int
     total_output_tokens: int
@@ -36,7 +34,6 @@ class UsageOverview(BaseModel):
 class DailyUsage(BaseModel):
     """Schema for daily usage summary"""
     date: date
-    chat_count: int
     chat_count: int
     token_count: int
     input_tokens: int
@@ -51,11 +48,12 @@ class AdminStatsResponse(BaseModel):
     total_chats: int
 
 
+
+
 class UserUsageStats(BaseModel):
     """Schema for individual user usage statistics"""
     user_id: int
     username: str
-    total_chats: int
     total_chats: int
     total_tokens: int
     total_input_tokens: int

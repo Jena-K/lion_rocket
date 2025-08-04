@@ -123,8 +123,8 @@ const handleAdminLogin = async () => {
       localStorage.setItem('rememberAdmin', 'true')
     }
     
-    // Redirect to admin dashboard
-    await router.push('/admin/dashboard')
+    // Redirect to admin user management page
+    await router.push('/admin/dashboard/users')
   } catch (error: any) {
     console.error('Admin login error:', error)
     

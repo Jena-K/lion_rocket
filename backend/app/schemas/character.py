@@ -45,6 +45,10 @@ class CharacterResponse(CharacterBase):
     created_at: datetime
     updated_at: Optional[datetime] = None
     avatar_url: Optional[str] = Field(None, description="Avatar image URL")
+    
+    # Optional statistics fields for admin endpoints
+    chat_count: Optional[int] = Field(None, description="Total number of chats for this character")
+    unique_users: Optional[int] = Field(None, description="Number of unique users who chatted with this character")
 
     model_config = ConfigDict(from_attributes=True)
 

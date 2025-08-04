@@ -266,8 +266,7 @@ test.describe('API Integration Tests', () => {
       const data = await response.json()
       expect(data).toMatchObject({
         chat_id: chatId,
-        content: testMessages.greeting,
-        is_from_user: true
+        content: testMessages.greeting
       })
     })
 

@@ -63,7 +63,7 @@ async def create_character(
 @router.get("/", response_model=CharacterListResponse)
 async def list_characters(
     skip: int = Query(0, ge=0),
-    limit: int = Query(20, ge=1, le=100),
+    limit: int = Query(20, ge=1),
     search: Optional[str] = None,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -102,7 +102,7 @@ async def list_characters(
 @router.get("/available", response_model=CharacterListResponse)
 async def list_available_characters(
     skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=200),
+    limit: int = Query(100, ge=1),
     search: Optional[str] = None,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),

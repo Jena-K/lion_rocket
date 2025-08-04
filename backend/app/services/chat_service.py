@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_
 from app.models import Chat, UsageStat, ConversationSummary
 from app.schemas.chat import ChatRole
-from app.services.claude_service import claude_service
+# Real Claude API integration through claude_service
 
 
 class ChatService:

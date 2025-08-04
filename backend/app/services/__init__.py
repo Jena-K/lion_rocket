@@ -1,5 +1,5 @@
 # Services package
-from .claude_service import claude_service
+# claude_service temporarily disabled for mock implementation
 from .chat_service import chat_service
 
-__all__ = ["claude_service", "chat_service"]
+__all__ = ["chat_service"]

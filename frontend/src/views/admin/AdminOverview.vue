@@ -213,7 +213,16 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="day in dateData" :key="day.date">
+              <tr v-if="isLoadingDaily">
+                <td colspan="4" class="text-center">
+                  <div class="loading-spinner"></div>
+                  일별 데이터 로딩 중...
+                </td>
+              </tr>
+              <tr v-else-if="dateData.length === 0">
+                <td colspan="4" class="text-center">표시할 데이터가 없습니다.</td>
+              </tr>
+              <tr v-else v-for="day in dateData" :key="day.date">
                 <td>{{ formatDate(day.date) }}</td>
                 <td>{{ day.chatCount.toLocaleString() }}</td>
                 <td>{{ day.userCount }}</td>
@@ -240,7 +249,14 @@
 
           <!-- User Ranking Cards -->
           <div class="user-ranking">
-            <div v-for="(user, index) in topUsers" :key="user.user_id" class="user-rank-card">
+            <div v-if="isLoadingUsers" class="loading-container">
+              <div class="loading-spinner"></div>
+              <p>사용자 데이터 로딩 중...</p>
+            </div>
+            <div v-else-if="topUsers.length === 0" class="empty-state">
+              <p>표시할 사용자가 없습니다.</p>
+            </div>
+            <div v-else v-for="(user, index) in topUsers" :key="user.user_id" class="user-rank-card">
               <div class="rank-number" :class="getRankClass(index + 1)">
                 {{ index + 1 }}
               </div>
@@ -257,7 +273,7 @@
                   <span class="mini-label">채팅</span>
                 </div>
                 <div class="mini-stat">
-                  <span class="mini-value">{{ user.chatCount }}</span>
+                  <span class="mini-value">{{ user.messageCount }}</span>
                   <span class="mini-label">메시지</span>
                 </div>
                 <div class="mini-stat">
@@ -295,7 +311,16 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="user in allUsers" :key="user.user_id">
+              <tr v-if="isLoadingUsers">
+                <td colspan="6" class="text-center">
+                  <div class="loading-spinner"></div>
+                  사용자 목록 로딩 중...
+                </td>
+              </tr>
+              <tr v-else-if="allUsers.length === 0">
+                <td colspan="6" class="text-center">표시할 사용자가 없습니다.</td>
+              </tr>
+              <tr v-else v-for="user in allUsers" :key="user.user_id">
                 <td>
                   <div class="user-cell">
                     <div class="small-avatar">{{ user.name.charAt(0) }}</div>
@@ -306,7 +331,7 @@
                   </div>
                 </td>
                 <td>{{ user.chatCount }}</td>
-                <td>{{ user.chatCount }}</td>
+                <td>{{ user.messageCount }}</td>
                 <td>{{ formatRelativeTime(user.lastActive) }}</td>
                 <td>
                   <span class="character-badge">{{ user.favoriteCharacter }}</span>
@@ -339,7 +364,14 @@
 
           <!-- Character Cards Grid -->
           <div class="character-grid">
-            <div v-for="char in characters" :key="char.character_id" class="character-stat-card">
+            <div v-if="isLoadingCharacters" class="loading-container">
+              <div class="loading-spinner"></div>
+              <p>캐릭터 데이터 로딩 중...</p>
+            </div>
+            <div v-else-if="characters.length === 0" class="empty-state">
+              <p>표시할 캐릭터가 없습니다.</p>
+            </div>
+            <div v-else v-for="char in characters" :key="char.character_id" class="character-stat-card">
               <div class="character-header">
                 <div class="character-avatar-large" :style="{ background: char.color }">
                   {{ char.name.charAt(0) }}
@@ -352,11 +384,11 @@
               
               <div class="character-metrics">
                 <div class="metric">
-                  <span class="metric-value">{{ char.chatCount }}</span>
+                  <span class="metric-value">{{ char.chat_count || char.total_chats }}</span>
                   <span class="metric-label">총 대화</span>
                 </div>
                 <div class="metric">
-                  <span class="metric-value">{{ char.userCount }}</span>
+                  <span class="metric-value">{{ char.user_count || char.unique_users }}</span>
                   <span class="metric-label">사용자</span>
                 </div>
                 <div class="metric">
@@ -408,7 +440,16 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="char in characterTableData" :key="char.character_id">
+              <tr v-if="isLoadingCharacters">
+                <td colspan="3" class="text-center">
+                  <div class="loading-spinner"></div>
+                  캐릭터 통계 로딩 중...
+                </td>
+              </tr>
+              <tr v-else-if="characterTableData.length === 0">
+                <td colspan="3" class="text-center">표시할 캐릭터가 없습니다.</td>
+              </tr>
+              <tr v-else v-for="char in characterTableData" :key="char.character_id">
                 <td>
                   <div class="character-cell">
                     <div class="small-avatar" :style="{ background: char.color }">
@@ -477,54 +518,31 @@ const dashboardStats = ref({
 })
 const errorMessage = ref('')
 
+// Loading states for different data types
+const isLoadingDaily = ref(true)
+const isLoadingUsers = ref(true)
+const isLoadingCharacters = ref(true)
+
 const tabs = [
   { id: 'date', label: '날짜별 보기', icon: CalendarIcon },
   { id: 'user', label: '사용자별 보기', icon: UsersIcon },
   { id: 'character', label: '캐릭터별 보기', icon: CharacterIcon }
 ]
 
-// Date view data
-const dateData = ref([
-  { date: new Date('2024-01-15'), chatCount: 2341, userCount: 342, topCharacter: '미나' },
-  { date: new Date('2024-01-14'), chatCount: 2156, userCount: 318, topCharacter: '지우' },
-  { date: new Date('2024-01-13'), chatCount: 1987, userCount: 289, topCharacter: '미나' },
-  { date: new Date('2024-01-12'), chatCount: 2234, userCount: 325, topCharacter: '하늘' },
-  { date: new Date('2024-01-11'), chatCount: 2098, userCount: 301, topCharacter: '미나' },
-  { date: new Date('2024-01-10'), chatCount: 1876, userCount: 278, topCharacter: '소라' },
-  { date: new Date('2024-01-09'), chatCount: 2345, userCount: 356, topCharacter: '미나' }
-])
-
-// User view data
-const topUsers = ref([
-  { id: 1, name: 'user123', email: 'user123@example.com', chatCount: 234, chatCount: 3421, avgDuration: 25 },
-  { id: 2, name: 'johndoe', email: 'john@example.com', chatCount: 198, chatCount: 2876, avgDuration: 22 },
-  { id: 3, name: 'janedoe', email: 'jane@example.com', chatCount: 176, chatCount: 2543, avgDuration: 19 },
-  { id: 4, name: 'testuser', email: 'test@example.com', chatCount: 165, chatCount: 2234, avgDuration: 18 },
-  { id: 5, name: 'alice', email: 'alice@example.com', chatCount: 143, chatCount: 1987, avgDuration: 21 }
-])
-
-const allUsers = ref([
-  { id: 1, name: 'user123', email: 'user123@example.com', chatCount: 234, chatCount: 3421, lastActive: new Date('2024-01-15T14:30'), favoriteCharacter: '미나', status: 'active' },
-  { id: 2, name: 'johndoe', email: 'john@example.com', chatCount: 198, chatCount: 2876, lastActive: new Date('2024-01-15T10:20'), favoriteCharacter: '지우', status: 'active' },
-  { id: 3, name: 'janedoe', email: 'jane@example.com', chatCount: 176, chatCount: 2543, lastActive: new Date('2024-01-14T18:45'), favoriteCharacter: '미나', status: 'active' },
-  { id: 4, name: 'testuser', email: 'test@example.com', chatCount: 165, chatCount: 2234, lastActive: new Date('2024-01-13T09:15'), favoriteCharacter: '하늘', status: 'inactive' },
-  { id: 5, name: 'alice', email: 'alice@example.com', chatCount: 143, chatCount: 1987, lastActive: new Date('2024-01-15T16:00'), favoriteCharacter: '소라', status: 'active' }
-])
-
-// Character view data
-const characters = ref([
-  { id: 1, name: '미나', description: '친근한 상담사', chatCount: 4532, userCount: 876, avgRating: 4.8, percentage: 28, color: '#8b5cf6' },
-  { id: 2, name: '지우', description: '유머러스한 친구', chatCount: 3421, userCount: 654, avgRating: 4.6, percentage: 21, color: '#3b82f6' },
-  { id: 3, name: '하늘', description: '차분한 조언자', chatCount: 2987, userCount: 543, avgRating: 4.7, percentage: 19, color: '#10b981' },
-  { id: 4, name: '소라', description: '활발한 동료', chatCount: 2654, userCount: 487, avgRating: 4.5, percentage: 17, color: '#f59e0b' }
-])
-
-const characterTableData = ref([
-  { id: 1, name: '미나', color: '#8b5cf6', totalChats: 4532, activeUsers: 876 },
-  { id: 2, name: '지우', color: '#3b82f6', totalChats: 3421, activeUsers: 654 },
-  { id: 3, name: '하늘', color: '#10b981', totalChats: 2987, activeUsers: 543 },
-  { id: 4, name: '소라', color: '#f59e0b', totalChats: 2654, activeUsers: 487 }
-])
+// Data from API endpoints
+const dateData = ref([])
+const topUsers = ref([])
+const allUsers = ref([])
+const characters = ref([])
+const characterTableData = computed(() => 
+  characters.value.map(char => ({
+    character_id: char.character_id,
+    name: char.name,
+    color: char.color,
+    totalChats: char.total_chats || char.chat_count,
+    activeUsers: char.unique_users || char.user_count
+  }))
+)
 
 // Methods
 const formatDate = (date: Date) => {
@@ -575,9 +593,109 @@ const loadDashboardStats = async () => {
   }
 }
 
+// Load daily trends data
+const loadDailyTrends = async () => {
+  try {
+    isLoadingDaily.value = true
+    
+    const response = await apiClient.get('/admin/dashboard/daily-trends?days=7')
+    const dailyData = response.data.map(day => ({
+      date: new Date(day.date),
+      chatCount: day.chat_count,
+      userCount: day.user_count,
+      topCharacter: day.top_character
+    }))
+    
+    dateData.value = dailyData
+    console.log('Daily trends loaded:', dailyData)
+  } catch (error) {
+    console.error('Failed to load daily trends:', error)
+    // Keep empty array in case of error
+    dateData.value = []
+  } finally {
+    isLoadingDaily.value = false
+  }
+}
+
+// Load user rankings and all users data
+const loadUsersData = async () => {
+  try {
+    isLoadingUsers.value = true
+    
+    // Load top users
+    const topUsersResponse = await apiClient.get('/admin/dashboard/user-rankings?limit=10')
+    topUsers.value = topUsersResponse.data.map(user => ({
+      user_id: user.user_id,
+      name: user.name,
+      email: user.email,
+      chatCount: user.chat_count,
+      messageCount: user.message_count,
+      uniqueCharacters: user.unique_characters,
+      lastActive: new Date(user.last_active),
+      favoriteCharacter: user.favorite_character,
+      avgDuration: user.avg_duration,
+      status: user.status
+    }))
+    
+    // Load all users
+    const allUsersResponse = await apiClient.get('/admin/dashboard/all-users?limit=100')
+    allUsers.value = allUsersResponse.data.map(user => ({
+      user_id: user.user_id,
+      name: user.name,
+      email: user.email,
+      chatCount: user.chat_count,
+      messageCount: user.message_count,
+      lastActive: new Date(user.last_active),
+      favoriteCharacter: user.favorite_character,
+      status: user.status
+    }))
+    
+    console.log('Users data loaded:', { topUsers: topUsers.value.length, allUsers: allUsers.value.length })
+  } catch (error) {
+    console.error('Failed to load users data:', error)
+    topUsers.value = []
+    allUsers.value = []
+  } finally {
+    isLoadingUsers.value = false
+  }
+}
+
+// Load character statistics
+const loadCharactersData = async () => {
+  try {
+    isLoadingCharacters.value = true
+    
+    const response = await apiClient.get('/admin/dashboard/character-stats')
+    characters.value = response.data.map(char => ({
+      character_id: char.character_id,
+      name: char.name,
+      description: char.description,
+      chat_count: char.chat_count,
+      total_chats: char.total_chats,
+      user_count: char.user_count,
+      unique_users: char.unique_users,
+      active_users: char.active_users,
+      avgRating: char.avg_rating,
+      percentage: char.percentage,
+      color: char.color,
+      last_used: char.last_used ? new Date(char.last_used) : null
+    }))
+    
+    console.log('Characters data loaded:', characters.value)
+  } catch (error) {
+    console.error('Failed to load characters data:', error)
+    characters.value = []
+  } finally {
+    isLoadingCharacters.value = false
+  }
+}
+
 // Load data on component mount
 onMounted(() => {
   loadDashboardStats()
+  loadDailyTrends()
+  loadUsersData()
+  loadCharactersData()
 })
 </script>
 
@@ -1305,6 +1423,32 @@ onMounted(() => {
   justify-content: center;
   gap: 1rem;
   padding: 2rem;
+}
+
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 2rem;
+  text-align: center;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  text-align: center;
+  color: #6b7280;
+}
+
+.text-center {
+  text-align: center;
+  padding: 1rem;
+  color: #6b7280;
 }
 
 .loading-spinner {

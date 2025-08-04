@@ -12,7 +12,7 @@ T = TypeVar('T')
 class PaginationParams(BaseModel):
     """Schema for pagination parameters"""
     page: int = Field(1, ge=1, description="Page number")
-    limit: int = Field(20, ge=1, le=100, description="Items per page")
+    limit: int = Field(20, ge=1, description="Items per page")
     
     def get_offset(self) -> int:
         """Calculate offset for database queries"""

@@ -35,6 +35,14 @@ export class AvatarService {
   }
 
   /**
+   * Get placeholder avatar based on user data
+   */
+  static getUserPlaceholderAvatar(user: { username: string }): string {
+    // Return the first letter of the username as fallback
+    return user.username.charAt(0).toUpperCase()
+  }
+
+  /**
    * Handle avatar loading error by setting fallback
    */
   static handleAvatarError(event: Event) {
@@ -85,6 +93,7 @@ export class AvatarService {
 export const {
   getAvatarUrl,
   getPlaceholderAvatar,
+  getUserPlaceholderAvatar,
   handleAvatarError,
   validateAvatarUrl,
   preloadAvatar

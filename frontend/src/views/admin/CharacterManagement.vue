@@ -804,6 +804,11 @@ const fetchCharacters = async () => {
     })
     
     console.log('✅ Admin API response:', response)
+    console.log('📊 Characters with stats:', response.characters?.map(c => ({ 
+      name: c.name, 
+      chat_count: c.chat_count, 
+      unique_users: c.unique_users 
+    })))
     characters.value = response.characters || []
     totalItems.value = response.total || 0
     
@@ -896,7 +901,7 @@ const handleSubmit = async () => {
         prompt: formData.prompt,
       }
       
-      await adminCharacterService.updateCharacter(editingCharacter.value.id, updateData)
+      await adminCharacterService.updateCharacter(editingCharacter.value.character_id, updateData)
       notificationStore.success('캐릭터가 성공적으로 수정되었습니다')
       closeModal()
       fetchCharacters()
@@ -937,7 +942,7 @@ const deleteCharacter = async () => {
   if (!characterToDelete.value) return
 
   try {
-    await adminCharacterService.deleteCharacter(characterToDelete.value.id)
+    await adminCharacterService.deleteCharacter(characterToDelete.value.character_id)
     notificationStore.success('캐릭터가 성공적으로 삭제되었습니다')
     characterToDelete.value = null
     fetchCharacters()
@@ -994,7 +999,7 @@ const uploadAvatar = async () => {
   try {
     console.log('📤 Uploading avatar for character:', managingAvatarCharacter.value.name)
     const result = await adminCharacterService.uploadAvatar(
-      managingAvatarCharacter.value.id,
+      managingAvatarCharacter.value.character_id,
       selectedAvatarFile.value
     )
     
@@ -1005,7 +1010,7 @@ const uploadAvatar = async () => {
     managingAvatarCharacter.value.avatar_url = result.avatar_url
     
     // Update the character in the list
-    const characterIndex = characters.value.findIndex(c => c.id === managingAvatarCharacter.value!.id)
+    const characterIndex = characters.value.findIndex(c => c.character_id === managingAvatarCharacter.value!.character_id)
     if (characterIndex !== -1) {
       characters.value[characterIndex].avatar_url = result.avatar_url
     }
@@ -1043,7 +1048,7 @@ const deleteAvatar = async () => {
   deletingAvatar.value = true
   try {
     console.log('🗑️ Deleting avatar for character:', managingAvatarCharacter.value.name)
-    const result = await adminCharacterService.deleteAvatar(managingAvatarCharacter.value.id)
+    const result = await adminCharacterService.deleteAvatar(managingAvatarCharacter.value.character_id)
     
     console.log('✅ Avatar deletion successful:', result)
     notificationStore.success(result.message || '아바타가 성공적으로 삭제되었습니다')
@@ -1052,7 +1057,7 @@ const deleteAvatar = async () => {
     managingAvatarCharacter.value.avatar_url = undefined
     
     // Update the character in the list
-    const characterIndex = characters.value.findIndex(c => c.id === managingAvatarCharacter.value!.id)
+    const characterIndex = characters.value.findIndex(c => c.character_id === managingAvatarCharacter.value!.character_id)
     if (characterIndex !== -1) {
       characters.value[characterIndex].avatar_url = undefined
     }

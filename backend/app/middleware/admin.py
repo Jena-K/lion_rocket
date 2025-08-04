@@ -33,8 +33,8 @@ class AdminAuditLogMiddleware(BaseHTTPMiddleware):
         ]
     
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        # Only log admin endpoints
-        if not request.url.path.startswith("/admin"):
+        # Only log admin endpoints, but skip CORS preflight requests
+        if not request.url.path.startswith("/admin") or request.method == "OPTIONS":
             return await call_next(request)
         
         # Capture request info
@@ -131,7 +131,8 @@ class AdminRateLimitMiddleware(BaseHTTPMiddleware):
         self.request_counts = {}  # Simple in-memory store
         
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        if not request.url.path.startswith("/admin"):
+        # Skip admin middleware for non-admin endpoints and CORS preflight requests
+        if not request.url.path.startswith("/admin") or request.method == "OPTIONS":
             return await call_next(request)
         
         # Get user identifier from JWT token
@@ -216,7 +217,8 @@ class AdminSecurityMiddleware(BaseHTTPMiddleware):
         ]
     
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        if not request.url.path.startswith("/admin"):
+        # Skip admin middleware for non-admin endpoints and CORS preflight requests
+        if not request.url.path.startswith("/admin") or request.method == "OPTIONS":
             return await call_next(request)
         
         # Check for suspicious patterns in URL
@@ -251,11 +253,10 @@ class AdminRequestValidationMiddleware(BaseHTTPMiddleware):
     
     def __init__(self, app: ASGIApp):
         super().__init__(app)
-        self.max_page_size = 100  # Maximum items per page
-        self.max_id_value = 2147483647  # Max int32
     
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        if not request.url.path.startswith("/admin"):
+        # Skip admin middleware for non-admin endpoints and CORS preflight requests
+        if not request.url.path.startswith("/admin") or request.method == "OPTIONS":
             return await call_next(request)
         
         # Validate query parameters
@@ -276,37 +277,7 @@ class AdminRequestValidationMiddleware(BaseHTTPMiddleware):
                     detail="Page must be a valid integer"
                 )
         
-        if "limit" in query_params:
-            try:
-                limit = int(query_params["limit"])
-                if limit < 1 or limit > self.max_page_size:
-                    raise HTTPException(
-                        status_code=400,
-                        detail=f"Invalid limit. Must be between 1 and {self.max_page_size}."
-                    )
-            except ValueError:
-                raise HTTPException(
-                    status_code=400,
-                    detail="Limit must be a valid integer"
-                )
         
-        # Validate ID parameters in path
-        path_parts = request.url.path.split("/")
-        for i, part in enumerate(path_parts):
-            if i > 0 and path_parts[i-1] in ["users", "characters", "chats"]:
-                try:
-                    id_value = int(part)
-                    if id_value < 1 or id_value > self.max_id_value:
-                        raise HTTPException(
-                            status_code=400,
-                            detail="Invalid ID value"
-                        )
-                except ValueError:
-                    if part not in ["toggle-admin", "usage", "stats"]:
-                        raise HTTPException(
-                            status_code=400,
-                            detail="Invalid ID format"
-                        )
         
         return await call_next(request)
 

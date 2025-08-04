@@ -7,7 +7,7 @@ import uvicorn
 import logging
 from pathlib import Path
 
-from app.routers import auth, chat, character, admin
+from app.routers import auth, chat_no_sse as chat, character, admin
 from app.database import create_tables
 from app.middleware import (
     # Rate limiting
@@ -58,42 +58,13 @@ app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(APISecurityMiddleware, api_version="1.0.0")
 
 # 5. CORS - Must be before authentication
+# Specific CORS configuration to resolve SSE credentials issue
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",      # React dev server
-        "http://localhost:5173",      # Vite dev server (default)
-        "http://localhost:5174",      # Vite dev server (alternate)
-        "http://localhost:5175",      # Vite dev server (alternate)
-        "http://localhost:5176",      # Vite dev server (alternate)
-        "http://localhost:5177",      # Vite dev server (alternate)
-        "http://localhost:5178",      # Vite dev server (current)
-        "http://localhost:5179",      # Vite dev server (current)
-        "http://localhost:5180",      # Vite dev server (current)
-        "http://localhost:8000",      # FastAPI docs
-        "http://localhost:8080",      # Additional Vue dev server port
-        "http://127.0.0.1:5173",      # Vite with 127.0.0.1
-        "http://127.0.0.1:5174",      # Vite alternate with 127.0.0.1
-        "http://127.0.0.1:5178",      # Vite current with 127.0.0.1
-    ],
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
-    allow_headers=[
-        "Accept",
-        "Accept-Language",
-        "Authorization",
-        "Content-Type",
-        "X-Request-ID",
-        "X-Correlation-ID", 
-        "X-User-ID",
-        "Origin",
-        "Referer",
-        "User-Agent",
-        "Cache-Control",
-        "Pragma",
-        "Expires",
-        "X-Requested-With"
-    ],
+    allow_origins=["*"],  # Allow all origins for development
+    allow_credentials=False,  # Disable credentials when using wildcard
+    allow_methods=["*"],  # Allow all methods
+    allow_headers=["*"],  # Allow all headers
 )
 
 # 6. Timing - Measure response times
@@ -137,8 +108,12 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 @app.exception_handler(Exception)
 async def general_exception_handler(request: Request, exc: Exception):
-    logger.error(f"Unhandled exception: {str(exc)}", exc_info=True)
-    return JSONResponse(status_code=500, content={"detail": "Internal server error", "status": 500})
+    import traceback
+    error_detail = f"Unhandled exception in {request.method} {request.url}: {str(exc)}"
+    logger.error(error_detail, exc_info=True)
+    print(f"[ERROR] {error_detail}")
+    print(f"[ERROR] Traceback: {traceback.format_exc()}")
+    return JSONResponse(status_code=500, content={"detail": f"Internal server error: {str(exc)}", "status": 500})
 
 
 @app.get(
@@ -272,12 +247,7 @@ async def serve_avatar_generic(parameter: str):
     import re
     import os
     
-    # Basic validation - allow alphanumeric, underscore, and hyphen
-    if not re.match(r'^[a-zA-Z0-9_-]+$', parameter):
-        raise HTTPException(
-            status_code=400, 
-            detail="Invalid parameter format. Only alphanumeric characters, underscores, and hyphens are allowed."
-        )
+    # Relaxed validation for educational purposes
     
     # Prevent path traversal attacks
     if '..' in parameter or '/' in parameter or '\\' in parameter:

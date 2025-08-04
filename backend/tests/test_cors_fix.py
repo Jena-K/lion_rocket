@@ -13,7 +13,7 @@ if sys.platform == 'win32':
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
 
-BASE_URL = "http://localhost:8000"
+BASE_URL = "http://localhost:8002"
 FRONTEND_ORIGIN = "http://localhost:5173"
 
 def test_cors_preflight():

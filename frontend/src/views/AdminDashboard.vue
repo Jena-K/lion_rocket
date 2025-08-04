@@ -36,20 +36,6 @@
       <aside class="sidebar">
         <nav class="admin-nav">
           <router-link
-            :to="{ name: 'admin-overview' }"
-            class="nav-link"
-            :class="{ active: $route.name === 'admin-overview' }"
-          >
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect x="3" y="3" width="7" height="7"></rect>
-              <rect x="14" y="3" width="7" height="7"></rect>
-              <rect x="14" y="14" width="7" height="7"></rect>
-              <rect x="3" y="14" width="7" height="7"></rect>
-            </svg>
-            <span>대시보드</span>
-          </router-link>
-
-          <router-link
             :to="{ name: 'admin-users' }"
             class="nav-link"
             :class="{ active: $route.name === 'admin-users' }"

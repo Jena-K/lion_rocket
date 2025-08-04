@@ -44,8 +44,8 @@ class ChatCreate(BaseModel):
     content: str = Field(
         ..., 
         min_length=1, 
-        max_length=4000,  # Increased limit for longer conversations
-        description="Chat content"
+        max_length=200,  # Limited to 200 characters per user request
+        description="Chat content (max 200 characters)"
     )
     character_id: int = Field(..., description="ID of the character to chat with")
 
@@ -53,7 +53,11 @@ class ChatCreate(BaseModel):
     def validate_content(cls, v):
         if not v or not v.strip():
             raise ValueError("Chat content cannot be empty")
-        return v.strip()
+        # Ensure content doesn't exceed 200 characters after stripping
+        stripped = v.strip()
+        if len(stripped) > 200:
+            raise ValueError("Chat content cannot exceed 200 characters")
+        return stripped
 
 
 class ChatResponse(BaseModel):
@@ -70,7 +74,7 @@ class ChatResponse(BaseModel):
 
 class ChatSessionCreateWithChat(ChatSessionCreate):
     """Schema for creating a chat session with an initial chat"""
-    initial_chat: str = Field(..., min_length=1, max_length=4000)
+    initial_chat: str = Field(..., min_length=1, max_length=200)
 
 
 class ChatInSession(ChatResponse):
@@ -114,3 +118,9 @@ class ChatPaginatedResponse(BaseModel):
 
 
 # ChatWithMessages removed - no longer needed
+
+
+class ChatMessageResponse(BaseModel):
+    """Response containing both user and AI messages"""
+    user_message: ChatResponse
+    ai_message: ChatResponse

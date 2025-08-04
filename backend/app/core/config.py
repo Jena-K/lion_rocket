@@ -34,8 +34,8 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite:///./data/lionrocket.db"
     
     # Security
-    SECRET_KEY: str = "your-secret-key-here-change-in-production"
-    JWT_SECRET: str = "your-jwt-secret-key-here-change-in-production"
+    SECRET_KEY: str = "g2FcqkMCHPVJD1uoRWsY4XAbE875LzN9"
+    JWT_SECRET: str = "g2FcqkMCHPVJD1uoRWsY4XAbE875LzN9"
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRATION_HOURS: int = 24
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
@@ -57,7 +57,10 @@ class Settings(BaseSettings):
     # Admin
     DEFAULT_ADMIN_USERNAME: str = "admin"
     DEFAULT_ADMIN_EMAIL: str = "admin@lionrocket.com"
-    DEFAULT_ADMIN_PASSWORD: str = "admin123"
+    DEFAULT_ADMIN_PASSWORD: str = "P@ssw0rd1@"
+    
+    # Claude API
+    CLAUDE_API_KEY: Optional[str] = "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"
     
     # Logging
     LOG_LEVEL: str = "INFO"
@@ -78,6 +81,3 @@ def get_settings() -> Settings:
 
 # Create a global settings instance
 settings = get_settings()
-
-
-# Note: OpenAPI configuration has been removed to use FastAPI's default Swagger implementation

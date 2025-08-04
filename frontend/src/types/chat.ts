@@ -33,3 +33,8 @@ export interface ConversationEndResponse {
   message: string
   summary_created: boolean
 }
+
+export interface ChatMessageResponse {
+  user_message: Message
+  ai_message: Message
+}

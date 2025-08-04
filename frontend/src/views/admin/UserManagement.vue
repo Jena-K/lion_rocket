@@ -176,14 +176,27 @@ const userToDelete = ref<User | null>(null)
 const limit = 20
 
 // Format helpers
-const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('ko-KR', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+const formatDate = (dateString: string | null | undefined) => {
+  if (!dateString) return '-'
+  
+  try {
+    const date = new Date(dateString)
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      return '-'
+    }
+    
+    return date.toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  } catch (error) {
+    console.error('Date formatting error:', error, 'for date:', dateString)
+    return '-'
+  }
 }
 
 const formatTokens = (value: number) => {
@@ -242,18 +255,25 @@ const changePage = (page: number) => {
 // User actions
 const toggleAdmin = async (user: User) => {
   try {
-    const updatedUser = await adminService.toggleAdminStatus(user.id)
+    const updatedUser = await adminService.toggleAdminStatus(user.user_id)
     
-    // Update the user in the current view
-    const index = users.value.findIndex((u) => u.id === user.id)
+    // Update the user in the current view with the complete updated user data
+    const index = users.value.findIndex((u) => u.user_id === user.user_id)
     if (index !== -1) {
-      users.value[index] = updatedUser
+      // Ensure all properties are properly updated
+      users.value[index] = {
+        ...updatedUser,
+        // Ensure date fields are properly formatted
+        created_at: updatedUser.created_at,
+        updated_at: updatedUser.updated_at,
+        last_active: updatedUser.last_active,
+      }
     }
     
     // Show success message
     const message = updatedUser.is_admin 
-      ? `${user.username}님에게 관리자 권한을 부여했습니다.`
-      : `${user.username}님의 관리자 권한을 해제했습니다.`
+      ? `${updatedUser.username}님에게 관리자 권한을 부여했습니다.`
+      : `${updatedUser.username}님의 관리자 권한을 해제했습니다.`
     notificationStore.success(message)
   } catch (err: any) {
     console.error('Error toggling admin status:', err)
@@ -270,7 +290,7 @@ const deleteUser = async () => {
   if (!userToDelete.value) return
 
   try {
-    await adminService.deleteUser(userToDelete.value.id)
+    await adminService.deleteUser(userToDelete.value.user_id)
     
     // Show success message
     notificationStore.success(`${userToDelete.value.username} 사용자가 삭제되었습니다.`)

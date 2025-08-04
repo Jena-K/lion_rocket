@@ -8,7 +8,7 @@ Import commonly used schemas here for easy access.
 from .user import (
     UserBase, UserCreate, UserUpdate, UserLogin,
     UserResponse, UserWithStats, AdminUserResponse,
-    TokenResponse
+    TokenResponse, AdminUserPaginatedResponse
 )
 
 # Character schemas
@@ -21,13 +21,7 @@ from .character import (
 from .chat import (
     MessageRole, ChatCreate, ChatResponse,
     MessageCreate, MessageResponse, ChatCreateWithMessage,
-    MessageInChat, ChatWithMessages, ChatListResponse
-)
-
-# Prompt schemas
-from .prompt import (
-    PromptBase, PromptCreate, PromptUpdate, PromptResponse,
-    CommonPromptBase, CommonPromptCreate, CommonPromptUpdate, CommonPromptResponse
+    MessageInChat, ChatWithMessages, ChatListResponse, ChatPaginatedResponse
 )
 
 # Stats schemas
@@ -51,10 +45,11 @@ __all__ = [
     "CharacterCreate", "CharacterResponse", "CharacterUpdate",
     # Chat
     "ChatCreate", "ChatResponse", "MessageCreate", "MessageResponse",
-    # Prompt
-    "PromptCreate", "PromptResponse", "PromptUpdate",
     # Common
     "PaginationParams", "PaginatedResponse", "ErrorResponse",
     # Stats
     "AdminStatsResponse", "UsageStatResponse"
 ]
+
+# Rebuild models to resolve forward references
+ChatWithMessages.model_rebuild()

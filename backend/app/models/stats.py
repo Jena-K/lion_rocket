@@ -13,7 +13,7 @@ class UsageStat(Base):
     __tablename__ = "usage_stats"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False, index=True)
     usage_date = Column(Date, nullable=False, index=True)
     chat_count = Column(Integer, default=0)
     message_count = Column(Integer, default=0)

@@ -1,78 +1,55 @@
 import apiClient from './api.client'
-import type { Chat, Message, ChatCreate, MessageCreate } from '@/types/chat'
+import type { Message, MessageCreate } from '@/types/chat'
 
 export class ChatService {
   private sseConnections: Map<number, EventSource> = new Map()
 
   /**
-   * Create a new chat
+   * Send a message to a character
    */
-  async createChat(data: ChatCreate): Promise<Chat> {
-    const response = await apiClient.post('/api/chats/', data)
+  async sendMessage(data: MessageCreate & { character_id: number }): Promise<Message> {
+    const response = await apiClient.post('/chats/messages', data)
     return response.data
   }
 
   /**
-   * Get list of chats
-   */
-  async getChats(params?: {
-    skip?: number
-    limit?: number
-    character_id?: number
-  }): Promise<{ chats: Chat[]; total: number }> {
-    const response = await apiClient.get('/api/chats/', { params })
-    return response.data
-  }
-
-  /**
-   * Get a specific chat
-   */
-  async getChat(chatId: number): Promise<Chat> {
-    const response = await apiClient.get(`/api/chats/${chatId}`)
-    return response.data
-  }
-
-  /**
-   * Delete a chat
-   */
-  async deleteChat(chatId: number): Promise<void> {
-    await apiClient.delete(`/api/chats/${chatId}`)
-    this.disconnectFromChat(chatId)
-  }
-
-  /**
-   * Get messages for a chat
+   * Get messages between user and character
    */
   async getMessages(
-    chatId: number,
+    characterId: number,
     params?: {
       skip?: number
       limit?: number
     }
   ): Promise<Message[]> {
-    const response = await apiClient.get(`/api/chats/${chatId}/messages`, { params })
+    const response = await apiClient.get('/chats/messages', {
+      params: {
+        character_id: characterId,
+        ...params
+      }
+    })
     return response.data
   }
 
   /**
-   * Send a message to a chat
+   * End conversation with a character
    */
-  async sendMessage(chatId: number, data: MessageCreate): Promise<Message> {
-    const response = await apiClient.post(`/api/chats/${chatId}/messages`, data)
+  async endConversation(characterId: number): Promise<{ message: string; summary_created: boolean }> {
+    const response = await apiClient.post(`/chats/end-conversation/${characterId}`)
     return response.data
   }
 
   /**
-   * Connect to chat SSE stream for real-time messages
+   * Connect to character SSE stream for real-time messages
    */
-  connectToChat(
-    chatId: number,
+  connectToCharacter(
+    characterId: number,
     onMessage: (event: MessageEvent) => void,
     onError?: (error: Event) => void,
     onOpen?: () => void
   ): void {
     // Disconnect existing connection if any
-    this.disconnectFromChat(chatId)
+    this.disconnectFromCharacter(characterId)
 
     // Get auth token
     const token = localStorage.getItem('auth_token')
@@ -83,7 +60,7 @@ export class ChatService {
 
     // Create SSE connection
     const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-    const url = `${baseUrl}/api/chats/${chatId}/stream`
+    const url = `${baseUrl}/chats/stream/${characterId}`
 
     const eventSource = new EventSource(url, {
       withCredentials: true,
@@ -91,7 +68,7 @@ export class ChatService {
 
     // Handle connection open
     eventSource.onopen = () => {
-      console.log(`Connected to chat ${chatId} SSE stream`)
+      console.log(`Connected to character ${characterId} SSE stream`)
       if (onOpen) onOpen()
     }
 
@@ -114,10 +91,6 @@ export class ChatService {
       onMessage(new MessageEvent('message_start', { data: JSON.parse(event.data) }))
     })
 
-    eventSource.addEventListener('message_chunk', (event) => {
-      onMessage(new MessageEvent('message_chunk', { data: JSON.parse(event.data) }))
-    })
-
     eventSource.addEventListener('message_complete', (event) => {
       onMessage(new MessageEvent('message_complete', { data: JSON.parse(event.data) }))
     })
@@ -132,33 +105,33 @@ export class ChatService {
 
     // Handle errors
     eventSource.onerror = (error) => {
-      console.error(`SSE error for chat ${chatId}:`, error)
+      console.error(`SSE error for character ${characterId}:`, error)
       if (onError) onError(error)
 
       // Reconnect after 5 seconds if not intentionally closed
       if (eventSource.readyState === EventSource.CLOSED) {
         setTimeout(() => {
-          if (this.sseConnections.has(chatId)) {
-            console.log(`Reconnecting to chat ${chatId}...`)
-            this.connectToChat(chatId, onMessage, onError, onOpen)
+          if (this.sseConnections.has(characterId)) {
+            console.log(`Reconnecting to character ${characterId}...`)
+            this.connectToCharacter(characterId, onMessage, onError, onOpen)
           }
         }, 5000)
       }
     }
 
     // Store connection
-    this.sseConnections.set(chatId, eventSource)
+    this.sseConnections.set(characterId, eventSource)
   }
 
   /**
-   * Disconnect from chat SSE stream
+   * Disconnect from character SSE stream
    */
-  disconnectFromChat(chatId: number): void {
-    const eventSource = this.sseConnections.get(chatId)
+  disconnectFromCharacter(characterId: number): void {
+    const eventSource = this.sseConnections.get(characterId)
     if (eventSource) {
       eventSource.close()
-      this.sseConnections.delete(chatId)
-      console.log(`Disconnected from chat ${chatId} SSE stream`)
+      this.sseConnections.delete(characterId)
+      console.log(`Disconnected from character ${characterId} SSE stream`)
     }
   }
 
@@ -166,9 +139,9 @@ export class ChatService {
    * Disconnect from all SSE streams
    */
   disconnectAll(): void {
-    this.sseConnections.forEach((eventSource, chatId) => {
+    this.sseConnections.forEach((eventSource, characterId) => {
       eventSource.close()
-      console.log(`Disconnected from chat ${chatId} SSE stream`)
+      console.log(`Disconnected from character ${characterId} SSE stream`)
     })
     this.sseConnections.clear()
   }
@@ -178,4 +151,4 @@ export class ChatService {
 export const chatService = new ChatService()
 
 // Export types
-export type { Chat, Message, ChatCreate, MessageCreate }
+export type { Message, MessageCreate }

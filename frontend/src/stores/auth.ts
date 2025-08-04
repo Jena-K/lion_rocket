@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import axios from 'axios'
+import apiClient from '../services/api.client'
 import { router } from '../router'
 import { useNotificationStore } from './notification'
 
@@ -14,6 +14,11 @@ interface User {
 
 interface LoginCredentials {
   username: string
+  password: string
+}
+
+interface AdminLoginCredentials {
+  adminId: string
   password: string
 }
 
@@ -53,7 +58,7 @@ export const useAuthStore = defineStore('auth', () => {
       try {
         token.value = savedToken
         user.value = JSON.parse(savedUser)
-        setupAxiosInterceptors()
+        // Auth token is automatically handled by apiClient
       } catch (error) {
         // 저장된 데이터가 유효하지 않으면 클리어
         clearAuth()
@@ -67,7 +72,7 @@ export const useAuthStore = defineStore('auth', () => {
       formData.append('username', credentials.username)
       formData.append('password', credentials.password)
 
-      const response = await axios.post<AuthResponse>('/auth/login', formData)
+      const response = await apiClient.post<AuthResponse>('/auth/login', formData)
       const authData = response.data
 
       setAuth(authData)
@@ -80,9 +85,29 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  const adminLogin = async (credentials: AdminLoginCredentials): Promise<void> => {
+    try {
+      const response = await apiClient.post<AuthResponse>('/auth/admin/login', credentials)
+      const authData = response.data
+
+      // Verify the user is an admin
+      if (!authData.user.is_admin) {
+        throw new Error('Access denied. Admin privileges required.')
+      }
+
+      setAuth(authData)
+
+      // Show success notification
+      const notificationStore = useNotificationStore()
+      notificationStore.success('관리자로 로그인되었습니다!', '관리자 대시보드로 이동합니다')
+    } catch (error: any) {
+      throw new Error(error.response?.data?.detail || '관리자 로그인에 실패했습니다')
+    }
+  }
+
   const register = async (registerData: RegisterData): Promise<void> => {
     try {
-      await axios.post('/auth/register', registerData)
+      await apiClient.post('/auth/register', registerData)
       // 회원가입 후 자동 로그인
       await login({
         username: registerData.username,
@@ -95,7 +120,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   const logout = async (): Promise<void> => {
     try {
-      await axios.post('/auth/logout')
+      await apiClient.post('/auth/logout')
     } catch (error) {
       // 로그아웃 API 실패해도 로컬 데이터는 클리어
       console.warn('Logout API failed:', error)
@@ -111,7 +136,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   const getCurrentUser = async (): Promise<User> => {
     try {
-      const response = await axios.get<User>('/auth/me')
+      const response = await apiClient.get<User>('/auth/me')
       user.value = response.data
       localStorage.setItem('auth_user', JSON.stringify(response.data))
       return response.data
@@ -129,7 +154,7 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.setItem('auth_token', authData.access_token)
     localStorage.setItem('auth_user', JSON.stringify(authData.user))
 
-    setupAxiosInterceptors()
+    // Auth token is automatically handled by apiClient
   }
 
   const clearAuth = (): void => {
@@ -141,34 +166,10 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('auth_user')
     localStorage.removeItem('token_expiry')
 
-    // Axios 헤더에서 토큰 제거
-    delete axios.defaults.headers.common['Authorization']
+    // Auth token removal is automatically handled by apiClient
   }
 
-  const setupAxiosInterceptors = (): void => {
-    // 요청 인터셉터: 모든 요청에 JWT 토큰 추가
-    axios.interceptors.request.use(
-      (config) => {
-        if (token.value) {
-          config.headers.Authorization = `Bearer ${token.value}`
-        }
-        return config
-      },
-      (error) => Promise.reject(error)
-    )
-
-    // 응답 인터셉터: 401 오류 시 로그아웃 처리
-    axios.interceptors.response.use(
-      (response) => response,
-      (error) => {
-        if (error.response?.status === 401 && token.value) {
-          clearAuth()
-          router.push('/login')
-        }
-        return Promise.reject(error)
-      }
-    )
-  }
+  // setupAxiosInterceptors is no longer needed as apiClient handles this
 
   return {
     // State
@@ -182,6 +183,7 @@ export const useAuthStore = defineStore('auth', () => {
     // Actions
     initializeAuth,
     login,
+    adminLogin,
     register,
     logout,
     getCurrentUser,
@@ -193,15 +195,14 @@ export const useAuthStore = defineStore('auth', () => {
           throw new Error('No token to refresh')
         }
 
-        const response = await axios.post<RefreshResponse>('/auth/refresh', {
+        const response = await apiClient.post<RefreshResponse>('/auth/refresh', {
           token: token.value,
         })
 
         token.value = response.data.access_token
         localStorage.setItem('auth_token', response.data.access_token)
 
-        // Update axios headers
-        axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.access_token}`
+        // Auth token update is automatically handled by apiClient
       } catch (error) {
         clearAuth()
         throw error

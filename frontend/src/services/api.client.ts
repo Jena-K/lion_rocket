@@ -1,4 +1,5 @@
-import axios, { AxiosInstance, AxiosError, AxiosRequestConfig } from 'axios'
+import axios from 'axios'
+import type { AxiosInstance, AxiosError, AxiosRequestConfig } from 'axios'
 import { useAuthStore } from '../stores/auth'
 import router from '../router'
 
@@ -105,8 +106,26 @@ apiClient.interceptors.response.use(
 function handleApiError(error: AxiosError) {
   const status = error.response?.status
   const message = (error.response?.data as any)?.detail || error.message
+  const url = error.config?.url
+  const method = error.config?.method?.toUpperCase()
 
-  console.error(`❌ API Error [${status}]:`, message)
+  // Enhanced error logging
+  console.group(`❌ API Error [${status || 'Network'}]`)
+  console.error(`${method} ${url}`)
+  console.error('Status:', status || 'No response')
+  console.error('Message:', message)
+  
+  if (error.response) {
+    console.error('Response Data:', error.response.data)
+    console.error('Response Headers:', error.response.headers)
+  } else if (error.request) {
+    console.error('Request:', error.request)
+    console.error('No response received - possible network or CORS issue')
+  } else {
+    console.error('Error:', error.message)
+  }
+  
+  console.groupEnd()
 
   // Global error handling
   switch (status) {
@@ -117,7 +136,8 @@ function handleApiError(error: AxiosError) {
       showErrorNotification('권한이 없습니다.')
       break
     case 404:
-      showErrorNotification('요청한 리소스를 찾을 수 없습니다.')
+      // Don't show notification for 404s as they might be expected (e.g., no active character)
+      console.log('Resource not found - this might be expected behavior')
       break
     case 429:
       showErrorNotification('너무 많은 요청을 보냈습니다. 잠시 후 다시 시도해주세요.')
@@ -127,7 +147,14 @@ function handleApiError(error: AxiosError) {
       break
     default:
       if (!error.response) {
-        showErrorNotification('네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요.')
+        console.error('Network/CORS Error Details:', {
+          url: error.config?.url,
+          baseURL: error.config?.baseURL,
+          method: error.config?.method,
+          code: error.code,
+          message: error.message
+        })
+        showErrorNotification('네트워크 오류가 발생했습니다. 백엔드 서버가 실행 중인지 확인해주세요.')
       }
   }
 }
@@ -155,5 +182,5 @@ function generateRequestId(): string {
 // Export configured client
 export default apiClient
 
-// Export types
+// Re-export types for consumers
 export type { AxiosInstance, AxiosError, AxiosRequestConfig }

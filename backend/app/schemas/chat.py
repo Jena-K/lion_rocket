@@ -3,7 +3,7 @@ Chat and Message schemas for request/response validation
 """
 from __future__ import annotations
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from typing import Optional, List, TYPE_CHECKING
 from datetime import datetime
 from enum import Enum
@@ -33,8 +33,7 @@ class ChatResponse(BaseModel):
     created_at: datetime
     last_message_at: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class MessageCreate(BaseModel):
@@ -48,7 +47,7 @@ class MessageCreate(BaseModel):
     chat_id: Optional[int] = None  # Optional for new chat creation
     character_id: Optional[int] = None  # Required if chat_id is not provided
 
-    @validator("content")
+    @field_validator("content")
     def validate_content(cls, v):
         if not v or not v.strip():
             raise ValueError("Message content cannot be empty")
@@ -64,8 +63,7 @@ class MessageResponse(BaseModel):
     token_count: int
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ChatCreateWithMessage(ChatCreate):
@@ -84,11 +82,21 @@ class ChatWithMessages(ChatResponse):
     message_count: int = 0
     
     # Include character info
-    character: Optional[CharacterResponse] = None
+    character: Optional['CharacterResponse'] = None
 
 
-class ChatListResponse(ChatResponse):
-    """Chat response for list views with summary info"""
-    message_count: int = 0
-    last_message: Optional[str] = None
-    character_name: Optional[str] = None
+class ChatListResponse(BaseModel):
+    """Paginated chat list response"""
+    chats: list[ChatResponse]
+    total: int
+    skip: int
+    limit: int
+
+
+class ChatPaginatedResponse(BaseModel):
+    """Paginated response for chats"""
+    items: list[ChatResponse]
+    total: int
+    page: int
+    pages: int
+    limit: int

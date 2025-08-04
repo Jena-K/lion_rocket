@@ -103,4 +103,6 @@ out/
 
 # Backup files
 *.bak
+*.bak2
 *.backup
+*~

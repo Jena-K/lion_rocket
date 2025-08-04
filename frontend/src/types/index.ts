@@ -26,3 +26,61 @@ export interface AuthResponse {
 export interface ApiError {
   detail: string
 }
+
+// Character types
+export enum Gender {
+  MALE = 'male',
+  FEMALE = 'female'
+}
+
+export interface Character {
+  id: number
+  name: string
+  gender: Gender
+  intro: string
+  personality_tags: string[]
+  interest_tags: string[]
+  prompt: string
+  created_by: number
+  is_active: boolean
+  created_at: string
+  updated_at?: string
+  avatar_url?: string
+  // Stats (optional for list responses)
+  chat_count?: number
+  total_messages?: number
+  unique_users?: number
+  total_tokens?: number
+  last_used?: string
+}
+
+export interface CharacterCreate {
+  name: string
+  gender: Gender
+  intro: string
+  personality_tags: string[]
+  interest_tags: string[]
+  prompt: string
+}
+
+export interface CharacterUpdate {
+  name?: string
+  gender?: Gender
+  intro?: string
+  personality_tags?: string[]
+  interest_tags?: string[]
+  prompt?: string
+  avatar_url?: string
+}
+
+export interface CharacterListResponse {
+  characters: Character[]
+  total: number
+  skip: number
+  limit: number
+}
+
+export interface CharacterSelectionResponse {
+  message: string
+  character: Character
+}

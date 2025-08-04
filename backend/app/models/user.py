@@ -11,7 +11,7 @@ from .base import Base
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, primary_key=True, index=True)
     username = Column(String(50), unique=True, index=True, nullable=False)
     email = Column(String(100), unique=True, index=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
@@ -21,7 +21,7 @@ class User(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     # Relationships
-    chats = relationship("Chat", back_populates="user", cascade="all, delete-orphan")
+    messages = relationship("Message", back_populates="user", cascade="all, delete-orphan")
     created_characters = relationship("Character", back_populates="creator", cascade="all, delete-orphan")
-    created_prompts = relationship("Prompt", back_populates="creator", cascade="all, delete-orphan")
     usage_stats = relationship("UsageStat", back_populates="user", cascade="all, delete-orphan")
+    conversation_summaries = relationship("ConversationSummary", back_populates="user", cascade="all, delete-orphan")

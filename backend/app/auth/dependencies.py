@@ -1,7 +1,8 @@
 from typing import Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
 
 from app.auth.jwt import verify_token
 from app.database import get_db
@@ -12,7 +13,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 
 async def get_current_user(
-    token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
+    token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)
 ) -> User:
     """현재 사용자 정보 가져오기"""
     credentials_exception = HTTPException(
@@ -25,7 +26,8 @@ async def get_current_user(
     if username is None:
         raise credentials_exception
 
-    user = db.query(User).filter(User.username == username).first()
+    result = await db.execute(select(User).where(User.username == username))
+    user = result.scalar_one_or_none()
     if user is None:
         raise credentials_exception
 
@@ -39,8 +41,8 @@ async def require_admin(current_user: User = Depends(get_current_user)) -> User:
     return current_user
 
 
-def get_current_user_optional(
-    token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)
+async def get_current_user_optional(
+    token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)
 ) -> Optional[User]:
     """토큰이 없어도 오류를 발생시키지 않는 사용자 정보 가져오기"""
     try:
@@ -48,7 +50,8 @@ def get_current_user_optional(
         if username is None:
             return None
 
-        user = db.query(User).filter(User.username == username).first()
+        result = await db.execute(select(User).where(User.username == username))
+        user = result.scalar_one_or_none()
         return user
     except:
         return None

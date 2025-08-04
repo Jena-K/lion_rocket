@@ -29,7 +29,8 @@ onMounted(() => {
 body {
   font-family:
     -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  background-color: #f5f5f5;
+  background-color: #FAFAFA;
+  color: #1F2937;
 }
 
 #app {
@@ -47,38 +48,52 @@ body {
   display: inline-block;
   padding: 0.75rem 1.5rem;
   border: none;
-  border-radius: 4px;
+  border-radius: 8px;
   font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
   text-decoration: none;
   transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .btn-primary {
-  background: #667eea;
+  background: #5A8F47;
   color: white;
+  box-shadow: 0 2px 8px rgba(90, 143, 71, 0.25);
 }
 
 .btn-primary:hover {
-  background: #5a6fd8;
+  background: #4A7C3C;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(90, 143, 71, 0.35);
+}
+
+.btn-primary:focus {
+  background: #3D6630;
+  box-shadow: 0 0 0 3px rgba(184, 238, 162, 0.4);
 }
 
 .btn-secondary {
-  background: #6c757d;
-  color: white;
+  background: #F3F4F6;
+  color: #4B5563;
+  border: 1px solid #E5E7EB;
 }
 
 .btn-secondary:hover {
-  background: #5a6268;
+  background: #E5E7EB;
+  color: #1F2937;
 }
 
 .btn-danger {
-  background: #dc3545;
-  color: white;
+  background: #FEE2E2;
+  color: #DC2626;
+  border: 1px solid #FECACA;
 }
 
 .btn-danger:hover {
-  background: #c82333;
+  background: #FCA5A5;
+  border-color: #F87171;
 }
 
 .btn:disabled {

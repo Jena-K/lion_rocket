@@ -17,7 +17,7 @@ class ClaudeService:
             raise ValueError("CLAUDE_API_KEY environment variable not set")
 
         self.client = Anthropic(api_key=self.api_key)
-        self.model = os.getenv("CLAUDE_MODEL", "claude-3-opus-20240229")
+        self.model = os.getenv("CLAUDE_MODEL", "claude-3-sonnet-20240229")
         self.max_tokens = int(os.getenv("CLAUDE_MAX_TOKENS", "1000"))
         self.temperature = float(os.getenv("CLAUDE_TEMPERATURE", "0.7"))
 
@@ -28,8 +28,8 @@ class ClaudeService:
         formatted_messages = []
 
         # Add system prompt from character
-        if character.system_prompt:
-            formatted_messages.append({"role": "system", "content": character.system_prompt})
+        if character.prompt:
+            formatted_messages.append({"role": "system", "content": character.prompt})
 
         # Add conversation history
         for msg in messages:
@@ -46,10 +46,14 @@ class ClaudeService:
         return len(text) // 4
 
     async def generate_response(
-        self, messages: List[Message], character: Character, user_message: str
+        self, 
+        messages: List[Message], 
+        character: Character, 
+        user_message: str,
+        conversation_summary: Optional[str] = None
     ) -> Tuple[str, int, int]:
         """
-        Generate a response from Claude
+        Generate a response from Claude with optional conversation context
 
         Returns:
             tuple: (response_text, input_tokens, output_tokens)
@@ -60,9 +64,14 @@ class ClaudeService:
 
             # Add the new user message
             formatted_messages.append({"role": "user", "content": user_message})
+            
+            # Prepare system prompt with conversation context if available
+            system_prompt = character.prompt
+            if conversation_summary:
+                system_prompt = f"{character.prompt}\n\n[이전 대화 요약]\n{conversation_summary}\n\n위 요약을 참고하여 일관성 있는 대화를 이어가주세요."
 
             # Count input tokens
-            input_text = character.system_prompt + " ".join(
+            input_text = system_prompt + " ".join(
                 [m["content"] for m in formatted_messages]
             )
             input_tokens = self.count_tokens(input_text)
@@ -71,7 +80,7 @@ class ClaudeService:
             response = self.client.messages.create(
                 model=self.model,
                 messages=formatted_messages[1:],  # Skip system message for messages param
-                system=character.system_prompt,  # Use system param instead
+                system=system_prompt,  # Use enhanced system prompt with context
                 max_tokens=self.max_tokens,
                 temperature=self.temperature,
             )

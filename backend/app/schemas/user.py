@@ -1,7 +1,7 @@
 """
 User-related Pydantic schemas for request/response validation
 """
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from typing import Optional
 from datetime import datetime
 
@@ -29,6 +29,12 @@ class UserLogin(BaseModel):
     password: str
 
 
+class AdminLogin(BaseModel):
+    """Schema for admin login request"""
+    adminId: str = Field(..., min_length=3, max_length=50, description="Admin username")
+    password: str = Field(..., min_length=6)
+
+
 class UserResponse(UserBase):
     """Schema for user response (excludes sensitive data)"""
     id: int
@@ -37,8 +43,7 @@ class UserResponse(UserBase):
     created_at: datetime
     updated_at: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserWithStats(UserResponse):
@@ -61,3 +66,12 @@ class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserResponse
+
+
+class AdminUserPaginatedResponse(BaseModel):
+    """Paginated response for admin users"""
+    items: list[AdminUserResponse]
+    total: int
+    page: int
+    pages: int
+    limit: int

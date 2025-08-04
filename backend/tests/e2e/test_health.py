@@ -18,10 +18,6 @@ class TestHealthEndpointsE2E:
         assert "message" in data
         assert "LionRocket" in data["message"]
         assert "version" in data
-        assert "docs" in data
-        assert data["docs"] == "/docs"
-        assert data["redoc"] == "/redoc"
-        assert data["openapi"] == "/openapi.json"
     
     def test_health_check(self, client: TestClient):
         """Test the health check endpoint"""
@@ -33,33 +29,7 @@ class TestHealthEndpointsE2E:
         assert "service" in data
         assert "LionRocket" in data["service"]
     
-    def test_openapi_schema(self, client: TestClient):
-        """Test OpenAPI schema is accessible"""
-        response = client.get("/openapi.json")
-        
-        assert response.status_code == 200
-        schema = response.json()
-        assert "openapi" in schema
-        assert "info" in schema
-        assert "paths" in schema
-        assert schema["info"]["title"] == "LionRocket AI Chat API"
-        assert "version" in schema["info"]
-    
-    def test_swagger_ui(self, client: TestClient):
-        """Test Swagger UI documentation is accessible"""
-        response = client.get("/docs")
-        
-        assert response.status_code == 200
-        assert "text/html" in response.headers["content-type"]
-        assert "swagger-ui" in response.text.lower()
-    
-    def test_redoc_ui(self, client: TestClient):
-        """Test ReDoc documentation is accessible"""
-        response = client.get("/redoc")
-        
-        assert response.status_code == 200
-        assert "text/html" in response.headers["content-type"]
-        assert "redoc" in response.text.lower()
+    # OpenAPI/Swagger tests removed - these endpoints are no longer available
 
 
 @pytest.mark.e2e

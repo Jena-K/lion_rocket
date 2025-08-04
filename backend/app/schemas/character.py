@@ -1,16 +1,25 @@
 """
 Character-related Pydantic schemas for request/response validation
 """
-from pydantic import BaseModel, Field
-from typing import Optional
+from pydantic import BaseModel, Field, ConfigDict
+from typing import Optional, List
 from datetime import datetime
+from enum import Enum
+
+
+class GenderEnum(str, Enum):
+    male = "male"
+    female = "female"
 
 
 class CharacterBase(BaseModel):
     """Base character schema with common fields"""
     name: str = Field(..., min_length=1, max_length=100)
-    system_prompt: str = Field(..., min_length=1)
-    description: Optional[str] = None
+    gender: GenderEnum
+    intro: str = Field(..., min_length=1, description="간단소개")
+    personality_tags: List[str] = Field(..., min_items=1, description="성격태그")
+    interest_tags: List[str] = Field(..., min_items=1, description="관심사 태그")
+    prompt: str = Field(..., min_length=1, description="프롬프트")
 
 
 class CharacterCreate(CharacterBase):
@@ -21,19 +30,23 @@ class CharacterCreate(CharacterBase):
 class CharacterUpdate(BaseModel):
     """Schema for updating character details"""
     name: Optional[str] = Field(None, min_length=1, max_length=100)
-    system_prompt: Optional[str] = Field(None, min_length=1)
-    description: Optional[str] = None
+    gender: Optional[GenderEnum] = None
+    intro: Optional[str] = Field(None, min_length=1)
+    personality_tags: Optional[List[str]] = Field(None, min_items=1)
+    interest_tags: Optional[List[str]] = Field(None, min_items=1)
+    prompt: Optional[str] = Field(None, min_length=1)
 
 
 class CharacterResponse(CharacterBase):
     """Schema for character response"""
     id: int
     created_by: int
+    is_active: bool
     created_at: datetime
     updated_at: Optional[datetime] = None
+    avatar_url: Optional[str] = Field(None, description="Avatar image URL")
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CharacterWithStats(CharacterResponse):
@@ -43,7 +56,15 @@ class CharacterWithStats(CharacterResponse):
     last_used: Optional[datetime] = None
 
 
-class CharacterListResponse(CharacterResponse):
-    """Character response for list views"""
-    chat_count: int = 0
-    last_used: Optional[datetime] = None
+class CharacterListResponse(BaseModel):
+    """Paginated character list response"""
+    characters: list[CharacterResponse]
+    total: int
+    skip: int
+    limit: int
+
+
+class CharacterSelectionResponse(BaseModel):
+    """Response for character selection"""
+    message: str
+    character: CharacterResponse

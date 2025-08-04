@@ -46,7 +46,7 @@ class ContentTypeValidationMiddleware:
             "application/x-www-form-urlencoded",
             "multipart/form-data",
         ]
-        self.excluded_paths = excluded_paths or ["/docs", "/redoc", "/openapi.json"]
+        self.excluded_paths = excluded_paths or []
 
     async def __call__(self, scope, receive, send):
         if scope["type"] != "http":

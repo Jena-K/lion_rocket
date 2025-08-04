@@ -2,15 +2,33 @@
   <div class="admin-dashboard">
     <header class="dashboard-header">
       <div class="header-left">
-        <h1>🚀 LionRocket 관리자</h1>
+        <div class="logo-title">
+          <img src="/lion_rocket_logo.png" alt="LionRocket" class="logo" />
+          <h1>LionRocket Admin</h1>
+        </div>
       </div>
       <div class="header-right">
         <span class="admin-info">
-          <i class="user-icon">👤</i>
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
           {{ authStore.user?.username }}
         </span>
-        <router-link to="/" class="back-btn"> <i>💬</i> 채팅으로 </router-link>
-        <button @click="handleLogout" class="logout-btn"><i>🚪</i> 로그아웃</button>
+        <router-link to="/" class="back-btn">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          </svg>
+          채팅으로
+        </router-link>
+        <button @click="handleLogout" class="logout-btn">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+          로그아웃
+        </button>
       </div>
     </header>
 
@@ -22,7 +40,12 @@
             class="nav-link"
             :class="{ active: $route.name === 'admin-overview' }"
           >
-            <i class="nav-icon">📊</i>
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="7" height="7"></rect>
+              <rect x="14" y="3" width="7" height="7"></rect>
+              <rect x="14" y="14" width="7" height="7"></rect>
+              <rect x="3" y="14" width="7" height="7"></rect>
+            </svg>
             <span>대시보드</span>
           </router-link>
 
@@ -31,8 +54,24 @@
             class="nav-link"
             :class="{ active: $route.name === 'admin-users' }"
           >
-            <i class="nav-icon">👥</i>
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+            </svg>
             <span>사용자 관리</span>
+          </router-link>
+
+          <router-link
+            :to="{ name: 'admin-chat-history' }"
+            class="nav-link"
+            :class="{ active: $route.name === 'admin-chat-history' }"
+          >
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+            </svg>
+            <span>채팅 기록</span>
           </router-link>
 
           <router-link
@@ -40,18 +79,14 @@
             class="nav-link"
             :class="{ active: $route.name === 'admin-characters' }"
           >
-            <i class="nav-icon">🤖</i>
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="10" rx="2" ry="2"></rect>
+              <circle cx="12" cy="5" r="2"></circle>
+              <path d="M12 7v4"></path>
+            </svg>
             <span>캐릭터 관리</span>
           </router-link>
 
-          <router-link
-            :to="{ name: 'admin-prompts' }"
-            class="nav-link"
-            :class="{ active: $route.name === 'admin-prompts' }"
-          >
-            <i class="nav-icon">📝</i>
-            <span>프롬프트 관리</span>
-          </router-link>
         </nav>
       </aside>
 
@@ -84,27 +119,39 @@ const handleLogout = async () => {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #f0f2f5;
+  background: #f5f7fa;
 }
 
 /* Header Styles */
 .dashboard-header {
-  background: linear-gradient(135deg, #343a40 0%, #495057 100%);
+  background: #1e293b;
   color: white;
   padding: 1rem 2rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   position: sticky;
   top: 0;
   z-index: 100;
 }
 
+.logo-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.logo {
+  height: 36px;
+  width: auto;
+}
+
 .header-left h1 {
   margin: 0;
-  font-size: 1.75rem;
-  font-weight: 600;
+  font-size: 1.5rem;
+  font-weight: 500;
+  letter-spacing: -0.025em;
 }
 
 .header-right {
@@ -117,11 +164,13 @@ const handleLogout = async () => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-weight: 500;
+  font-weight: 400;
+  color: #cbd5e1;
 }
 
-.user-icon {
-  font-size: 1.2rem;
+.icon {
+  width: 1.25rem;
+  height: 1.25rem;
 }
 
 .back-btn,
@@ -131,32 +180,35 @@ const handleLogout = async () => {
   gap: 0.5rem;
   padding: 0.5rem 1rem;
   border-radius: 6px;
-  font-weight: 500;
-  transition: all 0.2s;
+  font-weight: 400;
+  transition: all 0.15s;
   border: none;
   cursor: pointer;
-  font-size: 0.95rem;
+  font-size: 0.875rem;
 }
 
 .back-btn {
-  background: #6c757d;
-  color: white;
+  background: transparent;
+  border: 1px solid #475569;
+  color: #cbd5e1;
   text-decoration: none;
 }
 
 .back-btn:hover {
-  background: #5a6268;
-  transform: translateY(-1px);
+  background: #334155;
+  border-color: #334155;
 }
 
 .logout-btn {
-  background: #dc3545;
-  color: white;
+  background: transparent;
+  border: 1px solid #ef4444;
+  color: #fca5a5;
 }
 
 .logout-btn:hover {
-  background: #c82333;
-  transform: translateY(-1px);
+  background: #ef4444;
+  color: white;
+  border-color: #ef4444;
 }
 
 /* Layout */
@@ -170,7 +222,7 @@ const handleLogout = async () => {
 .sidebar {
   width: 250px;
   background: white;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
+  border-right: 1px solid #e5e7eb;
   overflow-y: auto;
 }
 
@@ -181,23 +233,25 @@ const handleLogout = async () => {
 .nav-link {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 0.875rem 1.5rem;
-  color: #495057;
+  gap: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  color: #64748b;
   text-decoration: none;
-  transition: all 0.2s;
-  font-weight: 500;
+  transition: all 0.15s;
+  font-weight: 400;
+  font-size: 0.875rem;
   position: relative;
 }
 
 .nav-link:hover {
-  background: #f8f9fa;
-  color: #343a40;
+  background: #f8fafc;
+  color: #334155;
 }
 
 .nav-link.active {
-  background: #e9ecef;
-  color: #007bff;
+  background: #f1f5f9;
+  color: #1e293b;
+  font-weight: 500;
 }
 
 .nav-link.active::before {
@@ -206,14 +260,14 @@ const handleLogout = async () => {
   left: 0;
   top: 0;
   bottom: 0;
-  width: 4px;
-  background: #007bff;
+  width: 3px;
+  background: #3b82f6;
 }
 
 .nav-icon {
-  font-size: 1.25rem;
-  width: 1.5rem;
-  text-align: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
 }
 
 /* Main Content */
@@ -221,7 +275,7 @@ const handleLogout = async () => {
   flex: 1;
   overflow-y: auto;
   padding: 2rem;
-  background: #f0f2f5;
+  background: #f5f7fa;
 }
 
 /* Transitions */

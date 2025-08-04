@@ -11,6 +11,13 @@ from .request_id import RequestIDMiddleware, get_request_id
 from .timing import TimingMiddleware, PerformanceMiddleware
 from .security import SecurityHeadersMiddleware, APISecurityMiddleware
 from .validation import RequestSizeLimitMiddleware, ContentTypeValidationMiddleware
+from .admin import (
+    AdminAuditLogMiddleware,
+    AdminRateLimitMiddleware,
+    AdminSecurityMiddleware,
+    AdminRequestValidationMiddleware,
+    add_admin_middleware,
+)
 
 __all__ = [
     # Rate limiting
@@ -34,4 +41,10 @@ __all__ = [
     # Validation
     "RequestSizeLimitMiddleware",
     "ContentTypeValidationMiddleware",
+    # Admin
+    "AdminAuditLogMiddleware",
+    "AdminRateLimitMiddleware",
+    "AdminSecurityMiddleware",
+    "AdminRequestValidationMiddleware",
+    "add_admin_middleware",
 ]

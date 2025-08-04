@@ -1,7 +1,7 @@
 """
 Statistics and usage tracking schemas
 """
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from datetime import date, datetime
 from typing import Optional, List
 
@@ -19,8 +19,7 @@ class UsageStatResponse(BaseModel):
     created_at: datetime
     updated_at: Optional[datetime] = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UsageOverview(BaseModel):
@@ -48,15 +47,10 @@ class AdminStatsResponse(BaseModel):
     """Schema for admin dashboard statistics"""
     total_users: int
     active_users_today: int
-    active_users_this_week: int
-    active_users_this_month: int
-    total_chats: int
+    total_conversations: int
     total_messages: int
-    total_characters: int
-    total_prompts: int
     total_tokens_used: int
     average_tokens_per_user: float
-    average_chats_per_user: float
 
 
 class UserUsageStats(BaseModel):

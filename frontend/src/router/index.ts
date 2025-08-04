@@ -5,20 +5,16 @@ import { useAuthStore } from '../stores/auth'
 const LoginView = () => import('../views/LoginView.vue')
 const RegisterView = () => import('../views/RegisterView.vue')
 const ChatView = () => import('../views/ChatView.vue')
+const AdminLoginView = () => import('../views/AdminLoginView.vue')
 const AdminDashboard = () => import('../views/AdminDashboard.vue')
+const CharacterSelectionView = () => import('../views/CharacterSelectionView.vue')
 
 // Admin components
 const AdminOverview = () => import('../views/admin/AdminOverview.vue')
 const UserManagement = () => import('../views/admin/UserManagement.vue')
 const CharacterManagement = () => import('../views/admin/CharacterManagement.vue')
-const PromptManagement = () => import('../views/admin/PromptManagement.vue')
+const UserChatHistory = () => import('../views/admin/UserChatHistory.vue')
 
-// User components
-const UserDashboard = () => import('../views/user/UserDashboard.vue')
-const UserProfile = () => import('../views/user/UserProfile.vue')
-const ChatHistory = () => import('../views/user/ChatHistory.vue')
-const UserSettings = () => import('../views/user/UserSettings.vue')
-const UserStats = () => import('../views/user/UserStats.vue')
 
 export const routes: RouteRecordRaw[] = [
   {
@@ -35,51 +31,33 @@ export const routes: RouteRecordRaw[] = [
   },
   {
     path: '/',
+    redirect: '/characters',
+  },
+  {
+    path: '/admin/login',
+    name: 'admin-login',
+    component: AdminLoginView,
+    meta: { requiresGuest: true },
+  },
+  {
+    path: '/characters',
+    name: 'character-selection',
+    component: CharacterSelectionView,
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/chat/:characterId',
     name: 'chat',
     component: ChatView,
     meta: { requiresAuth: true },
   },
   {
-    path: '/chat/:id',
-    name: 'chat-detail',
-    component: ChatView,
-    meta: { requiresAuth: true },
-  },
-  {
-    path: '/user',
-    name: 'user',
-    component: UserDashboard,
-    meta: { requiresAuth: true },
-    children: [
-      {
-        path: '',
-        redirect: { name: 'user-profile' },
-      },
-      {
-        path: 'profile',
-        name: 'user-profile',
-        component: UserProfile,
-      },
-      {
-        path: 'chats',
-        name: 'user-chats',
-        component: ChatHistory,
-      },
-      {
-        path: 'stats',
-        name: 'user-stats',
-        component: UserStats,
-      },
-      {
-        path: 'settings',
-        name: 'user-settings',
-        component: UserSettings,
-      },
-    ],
-  },
-  {
     path: '/admin',
-    name: 'admin',
+    redirect: '/admin/dashboard',
+  },
+  {
+    path: '/admin/dashboard',
+    name: 'admin-dashboard',
     component: AdminDashboard,
     meta: { requiresAuth: true, requiresAdmin: true },
     children: [
@@ -99,9 +77,9 @@ export const routes: RouteRecordRaw[] = [
         component: CharacterManagement,
       },
       {
-        path: 'prompts',
-        name: 'admin-prompts',
-        component: PromptManagement,
+        path: 'chat-history',
+        name: 'admin-chat-history',
+        component: UserChatHistory,
       },
     ],
   },
@@ -117,7 +95,7 @@ export const router = createRouter({
 })
 
 // 네비게이션 가드
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
 
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
@@ -125,10 +103,26 @@ router.beforeEach((to, from, next) => {
     next('/login')
   } else if (to.meta.requiresGuest && authStore.isAuthenticated) {
     // 게스트 전용 페이지인데 이미 로그인한 경우
-    next('/')
+    next('/characters')
   } else if (to.meta.requiresAdmin && !authStore.isAdmin) {
     // 관리자 권한이 필요한데 관리자가 아닌 경우
-    next('/')
+    next('/characters')
+  } else if (to.meta.requiresCharacter) {
+    // 캐릭터가 필요한 페이지인 경우
+    const { useCharacterStore } = await import('../stores/character')
+    const characterStore = useCharacterStore()
+    
+    // 활성 캐릭터가 없으면 먼저 확인
+    if (!characterStore.activeCharacter) {
+      await characterStore.fetchActiveCharacter()
+    }
+    
+    // 여전히 활성 캐릭터가 없으면 캐릭터 선택 페이지로
+    if (!characterStore.activeCharacter) {
+      next('/characters')
+    } else {
+      next()
+    }
   } else {
     next()
   }

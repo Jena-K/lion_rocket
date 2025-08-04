@@ -14,8 +14,7 @@ class PaginationParams(BaseModel):
     page: int = Field(1, ge=1, description="Page number")
     limit: int = Field(20, ge=1, le=100, description="Items per page")
     
-    @property
-    def offset(self) -> int:
+    def get_offset(self) -> int:
         """Calculate offset for database queries"""
         return (self.page - 1) * self.limit
 
@@ -27,18 +26,6 @@ class PaginatedResponse(BaseModel, Generic[T]):
     page: int
     pages: int
     limit: int
-    
-    @classmethod
-    def create(cls, items: List[T], total: int, page: int, limit: int) -> "PaginatedResponse[T]":
-        """Create a paginated response"""
-        pages = (total + limit - 1) // limit  # Ceiling division
-        return cls(
-            items=items,
-            total=total,
-            page=page,
-            pages=pages,
-            limit=limit
-        )
 
 
 class ErrorResponse(BaseModel):
@@ -76,3 +63,15 @@ class HealthCheckResponse(BaseModel):
     version: Optional[str] = None
     timestamp: str
     checks: Optional[Dict[str, Any]] = None
+
+
+def create_paginated_response(items: List[T], total: int, page: int, limit: int) -> PaginatedResponse[T]:
+    """Create a paginated response - utility function"""
+    pages = (total + limit - 1) // limit  # Ceiling division
+    return PaginatedResponse(
+        items=items,
+        total=total,
+        page=page,
+        pages=pages,
+        limit=limit
+    )

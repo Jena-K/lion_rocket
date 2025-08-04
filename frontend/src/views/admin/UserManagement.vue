@@ -8,7 +8,7 @@
           type="text"
           placeholder="사용자 검색..."
           class="search-input"
-          @input="handleSearch"
+          @input="debouncedSearch"
         />
       </div>
     </div>
@@ -21,7 +21,12 @@
 
     <!-- Error State -->
     <div v-else-if="error" class="error-state">
-      <p>❌ {{ error }}</p>
+      <svg class="error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="15" y1="9" x2="9" y2="15"></line>
+        <line x1="9" y1="9" x2="15" y2="15"></line>
+      </svg>
+      <p>{{ error }}</p>
       <button @click="fetchUsers" class="retry-btn">다시 시도</button>
     </div>
 
@@ -35,10 +40,10 @@
               <th>사용자명</th>
               <th>이메일</th>
               <th>권한</th>
-              <th>가입일</th>
               <th>채팅 수</th>
               <th>토큰 사용량</th>
               <th>마지막 활동</th>
+              <th>가입일</th>
               <th>작업</th>
             </tr>
           </thead>
@@ -56,26 +61,27 @@
                   {{ user.is_admin ? '관리자' : '일반 사용자' }}
                 </span>
               </td>
-              <td>{{ formatDate(user.created_at) }}</td>
               <td>{{ user.total_chats || 0 }}</td>
               <td>{{ formatTokens(user.total_tokens || 0) }}</td>
               <td>{{ user.last_active ? formatDate(user.last_active) : '-' }}</td>
+              <td>{{ formatDate(user.created_at) }}</td>
               <td>
                 <div class="action-buttons">
-                  <button
-                    @click="viewUserDetail(user)"
-                    class="action-btn view-btn"
-                    title="상세 보기"
-                  >
-                    👁️
-                  </button>
                   <button
                     @click="toggleAdmin(user)"
                     class="action-btn admin-btn"
                     :disabled="user.id === authStore.user?.id"
                     :title="user.is_admin ? '관리자 권한 해제' : '관리자 권한 부여'"
                   >
-                    {{ user.is_admin ? '👤' : '👑' }}
+                    <svg v-if="user.is_admin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                      <circle cx="9" cy="7" r="4"></circle>
+                      <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                      <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                    </svg>
+                    <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path>
+                    </svg>
                   </button>
                   <button
                     @click="confirmDelete(user)"
@@ -83,7 +89,10 @@
                     :disabled="user.id === authStore.user?.id"
                     title="삭제"
                   >
-                    🗑️
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <polyline points="3 6 5 6 21 6"></polyline>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    </svg>
                   </button>
                 </div>
               </td>
@@ -110,69 +119,12 @@
 
     <!-- Empty State -->
     <div v-else class="empty-state">
-      <p>🔍 사용자가 없습니다.</p>
+      <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"></circle>
+        <path d="m21 21-4.35-4.35"></path>
+      </svg>
+      <p>사용자가 없습니다.</p>
     </div>
-
-    <!-- User Detail Modal -->
-    <Teleport to="body">
-      <div v-if="selectedUser" class="modal-overlay" @click="closeModal">
-        <div class="modal" @click.stop>
-          <div class="modal-header">
-            <h3>사용자 상세 정보</h3>
-            <button @click="closeModal" class="close-btn">✕</button>
-          </div>
-          <div class="modal-body">
-            <div class="detail-grid">
-              <div class="detail-item">
-                <label>ID:</label>
-                <span>{{ selectedUser.id }}</span>
-              </div>
-              <div class="detail-item">
-                <label>사용자명:</label>
-                <span>{{ selectedUser.username }}</span>
-              </div>
-              <div class="detail-item">
-                <label>이메일:</label>
-                <span>{{ selectedUser.email }}</span>
-              </div>
-              <div class="detail-item">
-                <label>권한:</label>
-                <span :class="['badge', selectedUser.is_admin ? 'badge-admin' : 'badge-user']">
-                  {{ selectedUser.is_admin ? '관리자' : '일반 사용자' }}
-                </span>
-              </div>
-              <div class="detail-item">
-                <label>가입일:</label>
-                <span>{{ formatDate(selectedUser.created_at) }}</span>
-              </div>
-              <div class="detail-item">
-                <label>총 채팅 수:</label>
-                <span>{{ selectedUser.total_chats || 0 }}개</span>
-              </div>
-              <div class="detail-item">
-                <label>총 토큰 사용량:</label>
-                <span>{{ formatTokens(selectedUser.total_tokens || 0) }}</span>
-              </div>
-              <div class="detail-item">
-                <label>마지막 활동:</label>
-                <span>{{
-                  selectedUser.last_active ? formatDate(selectedUser.last_active) : '없음'
-                }}</span>
-              </div>
-            </div>
-
-            <div class="modal-actions">
-              <button @click="viewUserChats(selectedUser)" class="modal-btn primary">
-                채팅 기록 보기
-              </button>
-              <button @click="viewUserUsage(selectedUser)" class="modal-btn secondary">
-                사용량 통계 보기
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </Teleport>
 
     <!-- Delete Confirmation Modal -->
     <Teleport to="body">
@@ -186,7 +138,12 @@
               정말로 <strong>{{ userToDelete.username }}</strong> 사용자를 삭제하시겠습니까?
             </p>
             <p class="warning-message">
-              ⚠️ 이 작업은 되돌릴 수 없으며, 모든 채팅 기록과 데이터가 영구적으로 삭제됩니다.
+              <svg class="warning-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                <line x1="12" y1="9" x2="12" y2="13"></line>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+              </svg>
+              이 작업은 되돌릴 수 없으며, 모든 채팅 기록과 데이터가 영구적으로 삭제됩니다.
             </p>
           </div>
           <div class="modal-footer">
@@ -202,9 +159,11 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '../../stores/auth'
+import { useNotificationStore } from '../../stores/notification'
 import { adminService, type User } from '../../services/admin.service'
 
 const authStore = useAuthStore()
+const notificationStore = useNotificationStore()
 
 // State
 const users = ref<User[]>([])
@@ -214,7 +173,6 @@ const currentPage = ref(1)
 const totalPages = ref(1)
 const totalUsers = ref(0)
 const searchQuery = ref('')
-const selectedUser = ref<User | null>(null)
 const userToDelete = ref<User | null>(null)
 
 const limit = 20
@@ -239,17 +197,20 @@ const formatTokens = (value: number) => {
   return value.toString()
 }
 
-// Fetch users
+// Fetch users from real API
 const fetchUsers = async () => {
   loading.value = true
   error.value = ''
 
   try {
     const response = await adminService.getUsers(currentPage.value, limit)
+    
     users.value = response.items
     totalUsers.value = response.total
     totalPages.value = response.pages
+    currentPage.value = response.page
   } catch (err: any) {
+    console.error('Error fetching users:', err)
     error.value = err.response?.data?.detail || '사용자 목록을 불러오는 중 오류가 발생했습니다.'
   } finally {
     loading.value = false
@@ -258,10 +219,18 @@ const fetchUsers = async () => {
 
 // Search handling
 const handleSearch = () => {
-  // In a real app, you'd implement server-side search
-  // For now, we'll just refetch the first page
+  // Reset to first page when searching
   currentPage.value = 1
   fetchUsers()
+}
+
+// Debounced search to avoid too many API calls
+let searchTimeout: NodeJS.Timeout | null = null
+const debouncedSearch = () => {
+  if (searchTimeout) clearTimeout(searchTimeout)
+  searchTimeout = setTimeout(() => {
+    handleSearch()
+  }, 500)
 }
 
 // Pagination
@@ -273,24 +242,25 @@ const changePage = (page: number) => {
 }
 
 // User actions
-const viewUserDetail = (user: User) => {
-  selectedUser.value = user
-}
-
-const closeModal = () => {
-  selectedUser.value = null
-}
-
 const toggleAdmin = async (user: User) => {
   try {
     const updatedUser = await adminService.toggleAdminStatus(user.id)
-    // Update user in list
+    
+    // Update the user in the current view
     const index = users.value.findIndex((u) => u.id === user.id)
     if (index !== -1) {
-      users.value[index] = { ...users.value[index], is_admin: updatedUser.is_admin }
+      users.value[index] = updatedUser
     }
+    
+    // Show success message
+    const message = updatedUser.is_admin 
+      ? `${user.username}님에게 관리자 권한을 부여했습니다.`
+      : `${user.username}님의 관리자 권한을 해제했습니다.`
+    notificationStore.success(message)
   } catch (err: any) {
-    alert(err.response?.data?.detail || '권한 변경 중 오류가 발생했습니다.')
+    console.error('Error toggling admin status:', err)
+    const errorMessage = err.response?.data?.detail || '권한 변경 중 오류가 발생했습니다.'
+    notificationStore.error(errorMessage)
   }
 }
 
@@ -303,28 +273,25 @@ const deleteUser = async () => {
 
   try {
     await adminService.deleteUser(userToDelete.value.id)
-    // Remove from list
-    users.value = users.value.filter((u) => u.id !== userToDelete.value!.id)
+    
+    // Show success message
+    notificationStore.success(`${userToDelete.value.username} 사용자가 삭제되었습니다.`)
+    
     userToDelete.value = null
-
-    // Refetch if page is now empty
-    if (users.value.length === 0 && currentPage.value > 1) {
+    
+    // Refetch current page
+    // If the current page is now empty and not the first page, go to previous page
+    if (users.value.length === 1 && currentPage.value > 1) {
       currentPage.value--
-      fetchUsers()
     }
+    
+    await fetchUsers()
   } catch (err: any) {
-    alert(err.response?.data?.detail || '사용자 삭제 중 오류가 발생했습니다.')
+    console.error('Error deleting user:', err)
+    const errorMessage = err.response?.data?.detail || '사용자 삭제 중 오류가 발생했습니다.'
+    notificationStore.error(errorMessage)
+    userToDelete.value = null
   }
-}
-
-const viewUserChats = (user: User) => {
-  // TODO: Implement user chats view
-  alert(`${user.username}의 채팅 기록 보기 - 준비 중`)
-}
-
-const viewUserUsage = (user: User) => {
-  // TODO: Implement user usage statistics view
-  alert(`${user.username}의 사용량 통계 보기 - 준비 중`)
 }
 
 onMounted(() => {
@@ -349,7 +316,9 @@ onMounted(() => {
 .page-header h2 {
   margin: 0;
   font-size: 1.75rem;
-  color: #2c3e50;
+  color: #1e293b;
+  font-weight: 600;
+  letter-spacing: -0.025em;
 }
 
 .header-actions {
@@ -358,11 +327,20 @@ onMounted(() => {
 }
 
 .search-input {
-  padding: 0.5rem 1rem;
-  border: 1px solid #ddd;
-  border-radius: 6px;
+  padding: 0.75rem 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
   font-size: 0.875rem;
   width: 250px;
+  transition: all 0.2s;
+  background: #f8fafc;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 /* Loading & Error States */
@@ -370,17 +348,17 @@ onMounted(() => {
 .error-state,
 .empty-state {
   text-align: center;
-  padding: 3rem;
+  padding: 4rem 3rem;
   background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .spinner {
   width: 50px;
   height: 50px;
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid #007bff;
+  border: 3px solid #f1f5f9;
+  border-top: 3px solid #3b82f6;
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin: 0 auto 1rem;
@@ -396,20 +374,28 @@ onMounted(() => {
 }
 
 .retry-btn {
-  padding: 0.5rem 1.5rem;
-  background: #007bff;
+  padding: 0.75rem 1.5rem;
+  background: #3b82f6;
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   font-weight: 500;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+
+.retry-btn:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 /* Table */
 .users-container {
   background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   overflow: hidden;
 }
 
@@ -430,81 +416,101 @@ onMounted(() => {
 }
 
 .users-table th {
-  background: #f8f9fa;
+  background: #f8fafc;
   font-weight: 600;
-  color: #495057;
-  font-size: 0.875rem;
+  color: #64748b;
+  font-size: 0.75rem;
   text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-.users-table tr:hover {
-  background: #f8f9fa;
+.users-table tbody tr {
+  transition: background-color 0.15s;
+}
+
+.users-table tbody tr:hover {
+  background: #f8fafc;
+}
+
+/* Center the actions column */
+.users-table th:last-child,
+.users-table td:last-child {
+  text-align: center;
 }
 
 /* Badges */
 .badge {
   display: inline-block;
-  padding: 0.25rem 0.75rem;
-  border-radius: 4px;
+  padding: 0.375rem 0.75rem;
+  border-radius: 6px;
   font-size: 0.75rem;
   font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
 }
 
 .badge-admin {
-  background: #28a745;
-  color: white;
+  background: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
 }
 
 .badge-user {
-  background: #6c757d;
-  color: white;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
 }
 
 /* Action Buttons */
 .action-buttons {
   display: flex;
   gap: 0.5rem;
+  justify-content: center;
+  align-items: center;
 }
 
 .action-btn {
-  padding: 0.25rem 0.5rem;
-  border: none;
-  border-radius: 4px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
   cursor: pointer;
-  font-size: 1rem;
-  transition: all 0.2s;
+  background: white;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-btn svg {
+  width: 16px;
+  height: 16px;
 }
 
 .action-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
-.view-btn {
-  background: #17a2b8;
-  color: white;
-}
-
-.view-btn:hover:not(:disabled) {
-  background: #138496;
-}
-
 .admin-btn {
-  background: #ffc107;
-  color: #212529;
+  color: #f59e0b;
 }
 
 .admin-btn:hover:not(:disabled) {
-  background: #e0a800;
+  background: #fef3c7;
+  border-color: #fbbf24;
+  color: #d97706;
 }
 
 .delete-btn {
-  background: #dc3545;
-  color: white;
+  color: #ef4444;
 }
 
 .delete-btn:hover:not(:disabled) {
-  background: #c82333;
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #dc2626;
 }
 
 /* Pagination */
@@ -514,27 +520,37 @@ onMounted(() => {
   align-items: center;
   gap: 1rem;
   padding: 1.5rem;
-  border-top: 1px solid #e9ecef;
+  border-top: 1px solid #e5e7eb;
 }
 
 .page-btn {
   padding: 0.5rem 1rem;
-  background: #007bff;
+  background: #3b82f6;
   color: white;
   border: none;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
   font-weight: 500;
+  font-size: 0.875rem;
+  transition: all 0.15s;
+}
+
+.page-btn:hover:not(:disabled) {
+  background: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .page-btn:disabled {
-  background: #6c757d;
+  background: #94a3b8;
   cursor: not-allowed;
+  transform: none;
 }
 
 .page-info {
-  color: #495057;
+  color: #64748b;
   font-weight: 500;
+  font-size: 0.875rem;
 }
 
 /* Modal */
@@ -553,8 +569,8 @@ onMounted(() => {
 
 .modal {
   background: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
   max-width: 600px;
   width: 90%;
   max-height: 90vh;
@@ -563,7 +579,7 @@ onMounted(() => {
 
 .modal-header {
   padding: 1.5rem;
-  border-bottom: 1px solid #e9ecef;
+  border-bottom: 1px solid #e5e7eb;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -572,20 +588,33 @@ onMounted(() => {
 .modal-header h3 {
   margin: 0;
   font-size: 1.25rem;
+  font-weight: 600;
+  color: #1e293b;
 }
 
 .close-btn {
   background: none;
   border: none;
-  font-size: 1.5rem;
   cursor: pointer;
-  color: #6c757d;
+  color: #64748b;
   padding: 0;
   width: 2rem;
   height: 2rem;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 6px;
+  transition: all 0.15s;
+}
+
+.close-btn:hover {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.close-btn svg {
+  width: 20px;
+  height: 20px;
 }
 
 .modal-body {
@@ -608,9 +637,11 @@ onMounted(() => {
 }
 
 .detail-item label {
-  font-size: 0.875rem;
-  color: #6c757d;
-  font-weight: 500;
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .modal-actions {
@@ -621,46 +652,52 @@ onMounted(() => {
 
 .modal-footer {
   padding: 1rem 1.5rem;
-  border-top: 1px solid #e9ecef;
+  border-top: 1px solid #e5e7eb;
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
+  background: #f8fafc;
 }
 
 .modal-btn {
   padding: 0.5rem 1.5rem;
   border: none;
-  border-radius: 6px;
+  border-radius: 8px;
   cursor: pointer;
   font-weight: 500;
-  transition: all 0.2s;
+  font-size: 0.875rem;
+  transition: all 0.15s;
 }
 
 .modal-btn.primary {
-  background: #007bff;
+  background: #3b82f6;
   color: white;
 }
 
 .modal-btn.primary:hover {
-  background: #0056b3;
+  background: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .modal-btn.secondary {
-  background: #6c757d;
-  color: white;
+  background: #e5e7eb;
+  color: #374151;
 }
 
 .modal-btn.secondary:hover {
-  background: #5a6268;
+  background: #d1d5db;
 }
 
 .modal-btn.danger {
-  background: #dc3545;
+  background: #ef4444;
   color: white;
 }
 
 .modal-btn.danger:hover {
-  background: #c82333;
+  background: #dc2626;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* Confirm Modal */
@@ -674,9 +711,23 @@ onMounted(() => {
 }
 
 .warning-message {
-  color: #dc3545;
+  color: #dc2626;
   font-size: 0.875rem;
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+}
+
+.warning-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  color: #ef4444;
 }
 
 /* Responsive */

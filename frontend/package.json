@@ -1,12 +1,30 @@
 {
   "name": "lionrocket-frontend",
   "version": "1.0.0",
+  "description": "LionRocket AI Chat Service - Frontend",
   "type": "module",
+  "keywords": [
+    "vue",
+    "vue3",
+    "typescript",
+    "ai-chat",
+    "pinia",
+    "vite"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host 0.0.0.0 --port 5173",
     "build": "vue-tsc && vite build",
-    "preview": "vite preview",
-    "type-check": "vue-tsc --noEmit"
+    "preview": "vite preview --host 0.0.0.0 --port 4173",
+    "type-check": "vue-tsc --noEmit",
+    "lint": "prettier --check .",
+    "lint:fix": "prettier --write .",
+    "clean": "rm -rf dist node_modules/.vite"
   },
   "dependencies": {
     "@vueuse/core": "^10.5.0",

@@ -13,7 +13,6 @@ AI 캐릭터와 자연스러운 대화를 나눌 수 있는 현대적인 웹 서
 - [환경 설정](#-환경-설정)
 - [개발 가이드](#-개발-가이드)
 - [Docker 사용법](#-docker-사용법)
-- [기여하기](#-기여하기)
 
 ## 🌟 주요 기능
 
@@ -294,61 +293,3 @@ docker run -p 8000:8000 -e DEPLOYMENT_MODE=development lionrocket-backend
 # 프로덕션 모드 실행
 docker run -p 8000:8000 -e DEPLOYMENT_MODE=production lionrocket-backend
 ```
-
-### 환경 변수 파일 사용
-```bash
-# .env 파일과 함께 실행
-docker run --env-file .env -p 8000:8000 lionrocket-backend
-```
-
-## 🔧 문제 해결
-
-### 일반적인 문제들
-
-#### 1. Claude API 연결 오류
-```bash
-# API 키 확인
-echo $CLAUDE_API_KEY
-
-# 네트워크 연결 테스트
-curl -H "x-api-key: your-api-key" https://api.anthropic.com/v1/messages
-```
-
-#### 2. 데이터베이스 오류
-```bash
-# 데이터베이스 재생성
-rm -f data/lionrocket.db
-alembic upgrade head
-```
-
-#### 3. 포트 충돌
-```bash
-# 다른 포트로 실행
-uvicorn app.main:app --host 0.0.0.0 --port 8001
-```
-
-## 🤝 기여하기
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-### 코드 스타일
-- Python: Black, Flake8, MyPy 준수
-- TypeScript/Vue: Prettier 설정 준수
-- 커밋 메시지: Conventional Commits 형식
-
-## 📄 라이선스
-
-이 프로젝트는 MIT 라이선스 하에 배포됩니다. 자세한 내용은 `LICENSE` 파일을 참조하세요.
-
-## 📞 지원 및 문의
-
-- **Issues**: [GitHub Issues](https://github.com/your-repo/lionrocket/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-repo/lionrocket/discussions)
-
----
-
-⭐ 이 프로젝트가 도움이 되었다면 스타를 눌러주세요!

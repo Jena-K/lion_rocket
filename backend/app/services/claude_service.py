@@ -2,8 +2,8 @@ import os
 import logging
 from typing import List, Dict, Optional, Tuple
 from anthropic import Anthropic, APIError, APIConnectionError, RateLimitError
-from app.models import Message, Character
-from app.schemas.chat import MessageRole
+from app.models import Chat, Character
+from app.schemas.chat import ChatRole
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +22,7 @@ class ClaudeService:
         self.temperature = float(os.getenv("CLAUDE_TEMPERATURE", "0.7"))
 
     def prepare_messages(
-        self, messages: List[Message], character: Character
+        self, chats: List[Chat], character: Character
     ) -> List[Dict[str, str]]:
         """Prepare messages for Claude API with character system prompt"""
         formatted_messages = []
@@ -32,10 +32,10 @@ class ClaudeService:
             formatted_messages.append({"role": "system", "content": character.prompt})
 
         # Add conversation history
-        for msg in messages:
+        for chat in chats:
             # Claude API uses "user" and "assistant" roles
-            role = msg.role if msg.role in ["user", "assistant"] else "user"
-            formatted_messages.append({"role": role, "content": msg.content})
+            role = chat.role if chat.role in ["user", "assistant"] else "user"
+            formatted_messages.append({"role": role, "content": chat.content})
 
         return formatted_messages
 
@@ -47,7 +47,7 @@ class ClaudeService:
 
     async def generate_response(
         self, 
-        messages: List[Message], 
+        chats: List[Chat], 
         character: Character, 
         user_message: str,
         conversation_summary: Optional[str] = None
@@ -60,7 +60,7 @@ class ClaudeService:
         """
         try:
             # Prepare messages for API
-            formatted_messages = self.prepare_messages(messages, character)
+            formatted_messages = self.prepare_messages(chats, character)
 
             # Add the new user message
             formatted_messages.append({"role": "user", "content": user_message})
@@ -88,8 +88,15 @@ class ClaudeService:
             # Extract response text
             response_text = response.content[0].text
 
-            # Count output tokens
-            output_tokens = self.count_tokens(response_text)
+            # Get actual token usage from API response
+            if hasattr(response, 'usage'):
+                # Use actual token counts from Claude API
+                input_tokens = response.usage.input_tokens
+                output_tokens = response.usage.output_tokens
+            else:
+                # Fallback to estimation if usage info not available
+                input_tokens = self.count_tokens(input_text)
+                output_tokens = self.count_tokens(response_text)
 
             # Log successful API call
             logger.info(

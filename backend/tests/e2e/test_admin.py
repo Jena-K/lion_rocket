@@ -5,7 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from app.models import User, Character, Prompt, Chat, Message
+from app.models import User, Character, Message
 from tests.fixtures.test_data import SAMPLE_USERS
 
 

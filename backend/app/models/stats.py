@@ -9,22 +9,21 @@ from .base import Base
 
 
 class UsageStat(Base):
-    """Daily usage statistics per user"""
+    """Daily usage statistics per user and character"""
     __tablename__ = "usage_stats"
 
-    id = Column(Integer, primary_key=True, index=True)
+    usage_stat_id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False, index=True)
+    character_id = Column(Integer, ForeignKey("characters.character_id"), nullable=False, index=True)
     usage_date = Column(Date, nullable=False, index=True)
-    chat_count = Column(Integer, default=0)
-    message_count = Column(Integer, default=0)
-    total_tokens = Column(Integer, default=0)
-    input_tokens = Column(Integer, default=0)
-    output_tokens = Column(Integer, default=0)
+    chat_count = Column(Integer, default=0)  # Number of chat interactions
+    token_count = Column(Integer, default=0)  # Total tokens used
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     # Relationships
     user = relationship("User", back_populates="usage_stats")
+    character = relationship("Character", back_populates="usage_stats")
 
     # Unique constraint on user_id + usage_date
     __table_args__ = (

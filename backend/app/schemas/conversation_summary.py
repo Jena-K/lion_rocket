@@ -9,7 +9,7 @@ from typing import Optional
 class ConversationSummaryBase(BaseModel):
     """Base schema for conversation summary"""
     summary: str = Field(..., description="Summarized conversation content")
-    message_count: int = Field(0, ge=0, description="Number of messages included in summary")
+    chat_count: int = Field(0, ge=0, description="Number of chats included in summary")
 
 
 class ConversationSummaryCreate(ConversationSummaryBase):
@@ -20,7 +20,7 @@ class ConversationSummaryCreate(ConversationSummaryBase):
 
 class ConversationSummaryResponse(ConversationSummaryBase):
     """Schema for conversation summary response"""
-    id: int
+    conversation_summary_id: int
     user_id: int
     character_id: int
     created_at: datetime

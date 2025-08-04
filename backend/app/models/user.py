@@ -21,7 +21,7 @@ class User(Base):
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
     # Relationships
-    messages = relationship("Message", back_populates="user", cascade="all, delete-orphan")
+    chats = relationship("Chat", back_populates="user", cascade="all, delete-orphan")
     created_characters = relationship("Character", back_populates="creator", cascade="all, delete-orphan")
     usage_stats = relationship("UsageStat", back_populates="user", cascade="all, delete-orphan")
     conversation_summaries = relationship("ConversationSummary", back_populates="user", cascade="all, delete-orphan")

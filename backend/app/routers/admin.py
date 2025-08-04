@@ -5,10 +5,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import func, and_, select, or_
 from app.database import get_db
 from app.auth.dependencies import require_admin
-from app.models import User, Message, UsageStat, Character
+from app.models import User, Chat, UsageStat, Character
 from app.schemas.user import AdminUserResponse, AdminUserPaginatedResponse
 from app.schemas.stats import AdminStatsResponse, UsageStatResponse
-from app.schemas.chat import MessageResponse, MessageRole
+from app.schemas.chat import ChatResponse, ChatRole
 from app.schemas.character import CharacterCreate, CharacterUpdate, CharacterResponse, CharacterListResponse
 from app.routers.character import create_character_response, get_avatar_path_from_filename
 from app.schemas.user import UserUpdate, UserResponse
@@ -39,31 +39,33 @@ async def get_all_users(
     for user in users:
         # Get user stats
         total_chats_result = await db.execute(
-            select(func.count(func.distinct(Message.character_id)))
-            .select_from(Message)
-            .where(Message.user_id == user.user_id)
+            select(func.count(func.distinct(Chat.character_id)))
+            .select_from(Chat)
+            .where(Chat.user_id == user.user_id)
         )
         total_chats = total_chats_result.scalar()
+
+        # Get last activity
+        last_chat_result = await db.execute(
+            select(Chat)
+            .where(Chat.user_id == user.user_id)
+            .order_by(Chat.created_at.desc())
+            .limit(1)
+        )
+        last_chat = last_chat_result.scalar_one_or_none()
+        last_active = last_chat.created_at if last_chat else None
+
+
+        # Get total tokens used by this user
         total_tokens_result = await db.execute(
-            select(func.sum(UsageStat.total_tokens))
-            .select_from(UsageStat)
+            select(func.coalesce(func.sum(UsageStat.token_count), 0))
             .where(UsageStat.user_id == user.user_id)
         )
         total_tokens = total_tokens_result.scalar() or 0
 
-        # Get last activity
-        last_message_result = await db.execute(
-            select(Message)
-            .where(Message.user_id == user.user_id)
-            .order_by(Message.created_at.desc())
-            .limit(1)
-        )
-        last_message = last_message_result.scalar_one_or_none()
-        last_active = last_message.created_at if last_message else None
-
         # Create response
         user_response = AdminUserResponse(
-            id=user.user_id,
+            user_id=user.user_id,
             username=user.username,
             email=user.email,
             is_admin=user.is_admin,
@@ -85,8 +87,8 @@ async def get_all_users(
     )
 
 
-@router.get("/users/{user_id}/messages")
-async def get_user_messages(
+@router.get("/users/{user_id}/chats")
+async def get_user_chats(
     user_id: int,
     character_id: Optional[int] = None,
     page: int = Query(1, ge=1),
@@ -94,7 +96,7 @@ async def get_user_messages(
     current_admin: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db),
 ):
-    """Get messages for a specific user (Admin only)"""
+    """Get chats for a specific user (Admin only)"""
     # Verify user exists
     user_result = await db.execute(select(User).where(User.user_id == user_id))
     user = user_result.scalar_one_or_none()
@@ -104,35 +106,104 @@ async def get_user_messages(
     skip = (page - 1) * limit
 
     # Build query
-    query = select(Message).where(Message.user_id == user_id)
-    count_query = select(func.count()).select_from(Message).where(Message.user_id == user_id)
+    query = select(Chat).where(Chat.user_id == user_id)
+    count_query = select(func.count()).select_from(Chat).where(Chat.user_id == user_id)
     
     if character_id:
-        query = query.where(Message.character_id == character_id)
-        count_query = count_query.where(Message.character_id == character_id)
+        query = query.where(Chat.character_id == character_id)
+        count_query = count_query.where(Chat.character_id == character_id)
     
-    # Get total message count
+    # Get total chat count
     total_result = await db.execute(count_query)
     total = total_result.scalar()
 
-    # Get messages with pagination
-    messages_result = await db.execute(
-        query.order_by(Message.created_at.desc())
+    # Get chats with pagination
+    chats_result = await db.execute(
+        query.order_by(Chat.created_at.desc())
         .offset(skip)
         .limit(limit)
     )
-    messages = messages_result.scalars().all()
+    chats = chats_result.scalars().all()
 
     # Convert to response
-    message_responses = [MessageResponse.model_validate(msg) for msg in messages]
+    chat_responses = [ChatResponse.model_validate(chat) for chat in chats]
 
     return {
-        "items": message_responses,
+        "items": chat_responses,
         "total": total,
         "page": page,
         "pages": (total + limit - 1) // limit,
         "limit": limit,
     }
+
+
+@router.get("/users/{user_id}/characters")
+async def get_user_character_stats(
+    user_id: int,
+    current_admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get character chat statistics for a specific user (Admin only)"""
+    # Verify user exists
+    user_result = await db.execute(select(User).where(User.user_id == user_id))
+    user = user_result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Get characters that the user has chatted with
+    characters_query = await db.execute(
+        select(Character, func.count(Chat.chat_id).label('chat_count'))
+        .join(Chat, Character.character_id == Chat.character_id)
+        .where(Chat.user_id == user_id)
+        .group_by(Character.character_id)
+        .order_by(func.max(Chat.created_at).desc())
+    )
+    
+    character_stats = []
+    for character, chat_count in characters_query:
+        # Get first and last chat times
+        first_chat_result = await db.execute(
+            select(Chat.created_at)
+            .where(and_(Chat.user_id == user_id, Chat.character_id == character.character_id))
+            .order_by(Chat.created_at.asc())
+            .limit(1)
+        )
+        first_chat_time = first_chat_result.scalar()
+        
+        last_chat_result = await db.execute(
+            select(Chat.created_at)
+            .where(and_(Chat.user_id == user_id, Chat.character_id == character.character_id))
+            .order_by(Chat.created_at.desc())
+            .limit(1)
+        )
+        last_chat_time = last_chat_result.scalar()
+        
+        # Count unique conversation sessions (simplified - just count days with chats)
+        conversation_days_result = await db.execute(
+            select(func.count(func.distinct(func.date(Chat.created_at))))
+            .where(and_(Chat.user_id == user_id, Chat.character_id == character.character_id))
+        )
+        conversation_count = conversation_days_result.scalar() or 1
+        
+        # Calculate average chats per conversation and duration
+        avg_chats_per_conversation = chat_count / conversation_count if conversation_count > 0 else 0
+        
+        # Simplified duration calculation (assume 30 seconds per chat on average)
+        avg_chat_duration = int(avg_chats_per_conversation * 0.5)  # minutes
+        
+        character_stats.append({
+            "character_id": character.character_id,
+            "name": character.name,
+            "avatar_url": character.avatar_url,
+            "chatCount": conversation_count,
+            "messageCount": chat_count,
+            "lastChatDate": last_chat_time,
+            "firstChatDate": first_chat_time,
+            "avgMessagesPerChat": round(avg_chats_per_conversation, 1),
+            "avgChatDuration": avg_chat_duration
+        })
+    
+    return character_stats
 
 
 @router.get("/users/{user_id}/usage", response_model=List[UsageStatResponse])
@@ -183,36 +254,26 @@ async def get_system_overview(
     # Active users today
     today = date.today()
     active_users_result = await db.execute(
-        select(func.count(func.distinct(Message.user_id)))
-        .where(func.date(Message.created_at) == today)
+        select(func.count(func.distinct(Chat.user_id)))
+        .where(func.date(Chat.created_at) == today)
     )
     active_users_today = active_users_result.scalar() or 0
 
     # Conversation statistics (unique user-character pairs)
     total_conversations_result = await db.execute(
-        select(func.count(func.distinct(func.concat(Message.user_id, '-', Message.character_id))))
-        .select_from(Message)
+        select(func.count(func.distinct(func.concat(Chat.user_id, '-', Chat.character_id))))
+        .select_from(Chat)
     )
     total_conversations = total_conversations_result.scalar()
-    total_messages_result = await db.execute(select(func.count()).select_from(Message))
-    total_messages = total_messages_result.scalar()
+    total_chats_result = await db.execute(select(func.count()).select_from(Chat))
+    total_chats = total_chats_result.scalar()
 
-    # Token usage
-    total_tokens_result = await db.execute(select(func.sum(UsageStat.total_tokens)))
-    total_tokens_used = total_tokens_result.scalar() or 0
-
-    # Average tokens per user
-    users_with_usage_result = await db.execute(select(func.count(func.distinct(UsageStat.user_id))))
-    users_with_usage = users_with_usage_result.scalar() or 1
-    average_tokens_per_user = total_tokens_used / users_with_usage if users_with_usage > 0 else 0
 
     return AdminStatsResponse(
         total_users=total_users,
         active_users_today=active_users_today,
         total_conversations=total_conversations,
-        total_messages=total_messages,
-        total_tokens_used=total_tokens_used,
-        average_tokens_per_user=average_tokens_per_user,
+        total_chats=total_chats,
     )
 
 
@@ -440,37 +501,31 @@ async def get_character_statistics(
     for character in characters:
         # Get conversation count for this character (unique users)
         conversation_count_result = await db.execute(
-            select(func.count(func.distinct(Message.user_id)))
-            .where(Message.character_id == character.character_id)
+            select(func.count(func.distinct(Chat.user_id)))
+            .where(Chat.character_id == character.character_id)
         )
         conversation_count = conversation_count_result.scalar() or 0
         
-        # Get message count for this character
-        message_count_result = await db.execute(
+        # Get chat count for this character
+        chat_count_result = await db.execute(
             select(func.count())
-            .select_from(Message)
-            .where(Message.character_id == character.character_id)
+            .select_from(Chat)
+            .where(Chat.character_id == character.character_id)
         )
-        message_count = message_count_result.scalar() or 0
+        chat_count = chat_count_result.scalar() or 0
         
-        # Get total tokens used for this character
-        token_count_result = await db.execute(
-            select(func.sum(Message.token_count))
-            .where(Message.character_id == character.character_id)
-        )
-        total_tokens = token_count_result.scalar() or 0
         
         # Get unique users who chatted with this character
         unique_users = conversation_count  # Already calculated above
         
-        # Get last message time
-        last_message_result = await db.execute(
-            select(Message.created_at)
-            .where(Message.character_id == character.character_id)
-            .order_by(Message.created_at.desc())
+        # Get last chat time
+        last_chat_result = await db.execute(
+            select(Chat.created_at)
+            .where(Chat.character_id == character.character_id)
+            .order_by(Chat.created_at.desc())
             .limit(1)
         )
-        last_message_time = last_message_result.scalar()
+        last_chat_time = last_chat_result.scalar()
         
         character_stats.append({
             "character_id": character.character_id,
@@ -479,16 +534,35 @@ async def get_character_statistics(
             "creator_id": character.created_by,
             "created_at": character.created_at,
             "conversation_count": conversation_count,
-            "message_count": message_count,
-            "total_tokens": total_tokens,
+            "chat_count": chat_count,
             "unique_users": unique_users,
-            "last_message_time": last_message_time,
+            "last_message_time": last_chat_time,
         })
     
     return {
         "total_characters": len(characters),
         "active_characters": sum(1 for c in characters if c.is_active),
         "character_stats": character_stats,
+    }
+
+
+@router.get("/dashboard/simple-stats")
+async def get_simple_dashboard_stats(
+    current_admin: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get simple dashboard statistics - only chat count and user count (Admin only)"""
+    # Total number of chats
+    total_chats_result = await db.execute(select(func.count()).select_from(Chat))
+    total_chats = total_chats_result.scalar() or 0
+    
+    # Total registered users 
+    total_users_result = await db.execute(select(func.count()).select_from(User))
+    total_users = total_users_result.scalar() or 0
+    
+    return {
+        "total_chats": total_chats,
+        "total_users": total_users
     }
 
 
@@ -511,7 +585,6 @@ async def get_usage_by_date(
         select(
             UsageStat.usage_date,
             func.sum(UsageStat.chat_count).label("total_chats"),
-            func.sum(UsageStat.total_tokens).label("total_tokens"),
             func.count(func.distinct(UsageStat.user_id)).label("active_users"),
         )
         .where(and_(UsageStat.usage_date >= start_date, UsageStat.usage_date <= end_date))
@@ -524,7 +597,6 @@ async def get_usage_by_date(
         daily_stats.append({
             "date": row.usage_date,
             "total_chats": row.total_chats or 0,
-            "total_tokens": row.total_tokens or 0,
             "active_users": row.active_users or 0,
         })
     
@@ -532,7 +604,6 @@ async def get_usage_by_date(
     period_totals_result = await db.execute(
         select(
             func.sum(UsageStat.chat_count).label("total_chats"),
-            func.sum(UsageStat.total_tokens).label("total_tokens"),
             func.count(func.distinct(UsageStat.user_id)).label("unique_users"),
         ).where(and_(UsageStat.usage_date >= start_date, UsageStat.usage_date <= end_date))
     )
@@ -543,7 +614,6 @@ async def get_usage_by_date(
         "end_date": end_date,
         "period_totals": {
             "total_chats": period_totals.total_chats or 0,
-            "total_tokens": period_totals.total_tokens or 0,
             "unique_users": period_totals.unique_users or 0,
         },
         "daily_stats": daily_stats,

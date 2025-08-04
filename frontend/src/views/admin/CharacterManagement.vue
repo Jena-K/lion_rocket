@@ -60,7 +60,7 @@
 
     <!-- Character Grid -->
     <div v-else-if="filteredCharacters.length > 0" class="characters-grid">
-      <div v-for="character in filteredCharacters" :key="character.id" class="character-card">
+      <div v-for="character in filteredCharacters" :key="character.character_id" class="character-card">
         <!-- Character Header with Avatar -->
         <div class="card-header">
           <div class="avatar-section">
@@ -715,7 +715,7 @@ import { Gender } from '../../types'
 import type { Character, CharacterCreate, CharacterUpdate } from '../../types'
 import { adminCharacterService } from '@/services/admin.character.service'
 import { useNotificationStore } from '@/stores/notification'
-import { getAvatarUrl, handleAvatarError } from '@/services/avatar.service'
+import { getPlaceholderAvatar, getAvatarUrl, handleAvatarError } from '@/services/avatar.service'
 
 const notificationStore = useNotificationStore()
 
@@ -920,7 +920,7 @@ const handleSubmit = async () => {
 
 const toggleActive = async (character: Character) => {
   try {
-    const result = await adminCharacterService.toggleActive(character.id)
+    const result = await adminCharacterService.toggleActive(character.character_id)
     notificationStore.success(result.message)
     fetchCharacters()
   } catch (error) {

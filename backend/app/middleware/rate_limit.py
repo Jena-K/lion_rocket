@@ -21,7 +21,7 @@ def get_identifier(request: Request):
             try:
                 user = get_current_user_optional(token=token, db=db)
                 if user:
-                    return f"user:{user.id}"
+                    return f"user:{user.user_id}"
             finally:
                 db.close()
     except:

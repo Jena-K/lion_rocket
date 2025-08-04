@@ -26,10 +26,16 @@
         </div>
         
         <div class="user-list">
+          <!-- Loading state for users -->
+          <div v-if="loading && users.length === 0" class="loading-users">
+            <div class="loading-spinner-small"></div>
+            <p>사용자 목록을 불러오는 중...</p>
+          </div>
+          
           <div 
             v-for="user in filteredUsers" 
-            :key="user.id"
-            :class="['user-item', { active: selectedUser?.id === user.id }]"
+            :key="user.user_id"
+            :class="['user-item', { active: selectedUser?.user_id === user.user_id }]"
             @click="selectUser(user)"
           >
             <div class="user-avatar">
@@ -43,7 +49,7 @@
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                   </svg>
-                  {{ user.totalChats }} 대화
+                  {{ user.total_chats || 0 }} 대화
                 </span>
               </div>
             </div>
@@ -74,19 +80,40 @@
             <p class="section-subtitle">총 {{ userCharacters.length }}명의 캐릭터와 대화했습니다</p>
           </div>
 
-          <div class="character-grid">
+          <!-- Loading state for characters -->
+          <div v-if="loading && userCharacters.length === 0" class="loading-characters">
+            <div class="loading-spinner"></div>
+            <p>캐릭터 통계를 불러오는 중...</p>
+          </div>
+          
+          <!-- Empty state for characters -->
+          <div v-else-if="!loading && userCharacters.length === 0" class="empty-characters">
+            <div class="empty-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M4 21v-2a4 4 0 0 1 3-3.87"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+            </div>
+            <h3>아직 대화한 캐릭터가 없습니다</h3>
+            <p>이 사용자는 아직 어떤 캐릭터와도 대화하지 않았습니다.</p>
+          </div>
+
+          <div v-else class="character-grid">
             <div 
               v-for="char in userCharacters" 
-              :key="char.id"
+              :key="char.character_id"
               class="character-card"
               @click="selectCharacter(char)"
             >
               <div class="character-avatar">
                 <img 
-                  v-if="char.avatar" 
-                  :src="char.avatar" 
+                  v-if="getAvatarUrl(char.avatar_url)" 
+                  :src="getAvatarUrl(char.avatar_url)!" 
                   :alt="char.name"
                   class="avatar-image"
+                  @error="handleAvatarError"
+                  loading="lazy"
                 />
                 <span v-else class="avatar-text">
                   {{ char.name.charAt(0) }}
@@ -173,10 +200,17 @@
           <!-- All Messages -->
           <div class="conversation-messages">
             <h4>전체 대화 내역</h4>
-            <div class="messages-container">
+            
+            <!-- Loading state for messages -->
+            <div v-if="loading && allChats.length === 0" class="loading-messages">
+              <div class="loading-spinner"></div>
+              <p>대화 내역을 불러오는 중...</p>
+            </div>
+            
+            <div v-else class="messages-container">
               <div 
-                v-for="(message, index) in allMessages" 
-                :key="message.id"
+                v-for="(message, index) in allChats" 
+                :key="message.message_id"
                 class="message-item"
                 :class="{ 
                   'user-message': message.isFromUser,
@@ -206,7 +240,7 @@
               </div>
               
               <!-- Empty state if no messages -->
-              <div v-if="allMessages.length === 0" class="no-messages">
+              <div v-if="allChats.length === 0" class="no-messages">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
                 </svg>
@@ -221,20 +255,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
+import { adminService, type User, type CharacterChatStats, type Chat } from '@/services/admin.service'
+import { useNotificationStore } from '@/stores/notification'
+import { getAvatarUrl, getPlaceholderAvatar, handleAvatarError } from '@/services/avatar.service'
 
-// Mock data types
-interface User {
-  id: number
-  username: string
-  email: string
-  totalChats: number
-}
-
+// Types
 interface CharacterChat {
-  id: number
+  character_id: number
   name: string
-  avatar?: string
+  avatar_url?: string
   chatCount: number
   messageCount: number
   lastChatDate: Date
@@ -244,140 +274,23 @@ interface CharacterChat {
 }
 
 interface Message {
-  id: number
+  message_id: number
   content: string
   isFromUser: boolean
   timestamp: Date
 }
 
 // State
+const notificationStore = useNotificationStore()
 const userSearch = ref('')
 const selectedUser = ref<User | null>(null)
 const selectedCharacter = ref<CharacterChat | null>(null)
+const loading = ref(false)
 
-// Mock data
-const users = ref<User[]>([
-  { id: 1, username: 'user123', email: 'user123@example.com', totalChats: 15 },
-  { id: 2, username: 'johndoe', email: 'john@example.com', totalChats: 23 },
-  { id: 3, username: 'janedoe', email: 'jane@example.com', totalChats: 8 },
-  { id: 4, username: 'testuser', email: 'test@example.com', totalChats: 42 },
-  { id: 5, username: 'alice', email: 'alice@example.com', totalChats: 31 },
-])
-
-const userCharacters = ref<CharacterChat[]>([
-  {
-    id: 1,
-    name: '미나',
-    chatCount: 8,
-    messageCount: 156,
-    lastChatDate: new Date('2024-01-15'),
-    firstChatDate: new Date('2023-12-01'),
-    avgMessagesPerChat: 19.5,
-    avgChatDuration: 25
-  },
-  {
-    id: 2,
-    name: '지우',
-    chatCount: 5,
-    messageCount: 89,
-    lastChatDate: new Date('2024-01-14'),
-    firstChatDate: new Date('2023-12-15'),
-    avgMessagesPerChat: 17.8,
-    avgChatDuration: 22
-  },
-  {
-    id: 3,
-    name: '하늘',
-    chatCount: 2,
-    messageCount: 34,
-    lastChatDate: new Date('2024-01-10'),
-    firstChatDate: new Date('2024-01-05'),
-    avgMessagesPerChat: 17,
-    avgChatDuration: 18
-  }
-])
-
-const allMessages = ref<Message[]>([
-  // Mock messages for demonstration
-  {
-    id: 1,
-    content: '안녕하세요! 오늘은 어떤 하루를 보내셨나요?',
-    isFromUser: false,
-    timestamp: new Date('2024-01-13 10:20')
-  },
-  {
-    id: 2,
-    content: '안녕! 오늘은 평범한 하루였어. 일하고 집에 왔지.',
-    isFromUser: true,
-    timestamp: new Date('2024-01-13 10:21')
-  },
-  {
-    id: 3,
-    content: '평범한 일상도 소중하죠. 퇴근 후에는 뭘 하실 계획이신가요?',
-    isFromUser: false,
-    timestamp: new Date('2024-01-13 10:22')
-  },
-  {
-    id: 4,
-    content: '저녁 먹고 넷플릭스 보려고. 추천할 만한 거 있어?',
-    isFromUser: true,
-    timestamp: new Date('2024-01-13 10:23')
-  },
-  {
-    id: 5,
-    content: '어떤 장르를 좋아하시나요? 액션, 로맨스, 스릴러, 코미디 중에서요!',
-    isFromUser: false,
-    timestamp: new Date('2024-01-13 10:24')
-  },
-  {
-    id: 6,
-    content: '요즘은 가벼운 코미디가 좋더라',
-    isFromUser: true,
-    timestamp: new Date('2024-01-13 10:25')
-  },
-  {
-    id: 7,
-    content: '안녕하세요! 오늘은 어떻게 지내셨어요?',
-    isFromUser: false,
-    timestamp: new Date('2024-01-14 18:45')
-  },
-  {
-    id: 8,
-    content: '오늘도 바빴어. 그래도 이제 퇴근했으니 좋네!',
-    isFromUser: true,
-    timestamp: new Date('2024-01-14 18:46')
-  },
-  {
-    id: 9,
-    content: '고생하셨어요! 오늘 저녁은 뭐 드실 계획이신가요?',
-    isFromUser: false,
-    timestamp: new Date('2024-01-14 18:47')
-  },
-  {
-    id: 10,
-    content: '치킨 시켜먹으려고. 맥주도 한 잔 할까 생각중이야',
-    isFromUser: true,
-    timestamp: new Date('2024-01-14 18:48')
-  },
-  {
-    id: 11,
-    content: '주말이 다가오네요! 주말 계획은 있으신가요?',
-    isFromUser: false,
-    timestamp: new Date('2024-01-15 14:30')
-  },
-  {
-    id: 12,
-    content: '특별한 계획은 없고 집에서 쉬려고 해',
-    isFromUser: true,
-    timestamp: new Date('2024-01-15 14:31')
-  },
-  {
-    id: 13,
-    content: '가끔은 그런 휴식도 필요하죠. 편안한 주말 보내세요!',
-    isFromUser: false,
-    timestamp: new Date('2024-01-15 14:32')
-  }
-])
+// Data
+const users = ref<User[]>([])
+const userCharacters = ref<CharacterChat[]>([])
+const allChats = ref<Message[]>([])
 
 // Computed
 const filteredUsers = computed(() => {
@@ -390,14 +303,78 @@ const filteredUsers = computed(() => {
   )
 })
 
-// Methods
-const selectUser = (user: User) => {
-  selectedUser.value = user
-  selectedCharacter.value = null
+// API Methods
+const fetchUsers = async () => {
+  try {
+    loading.value = true
+    const response = await adminService.getUsers(1, 100) // Get all users
+    users.value = response.items
+  } catch (error) {
+    console.error('Failed to fetch users:', error)
+    notificationStore.error('사용자 목록을 불러오는데 실패했습니다.')
+  } finally {
+    loading.value = false
+  }
 }
 
-const selectCharacter = (character: CharacterChat) => {
+const fetchUserCharacters = async (userId: number) => {
+  try {
+    loading.value = true
+    const characterStats = await adminService.getUserCharacterStats(userId)
+    userCharacters.value = characterStats.map(stat => ({
+      character_id: stat.character_id,
+      name: stat.name,
+      avatar_url: stat.avatar_url,
+      chatCount: stat.chatCount,
+      messageCount: stat.messageCount,
+      lastChatDate: new Date(stat.lastChatDate),
+      firstChatDate: new Date(stat.firstChatDate),
+      avgMessagesPerChat: stat.avgMessagesPerChat,
+      avgChatDuration: stat.avgChatDuration
+    }))
+  } catch (error) {
+    console.error('Failed to fetch user characters:', error)
+    notificationStore.error('사용자 캐릭터 통계를 불러오는데 실패했습니다.')
+  } finally {
+    loading.value = false
+  }
+}
+
+const fetchChats = async (userId: number, characterId: number) => {
+  try {
+    loading.value = true
+    const response = await adminService.getUserChats2(userId, characterId, 1, 500) // Get all chats
+    allChats.value = response.items.map(msg => ({
+      message_id: msg.message_id,
+      content: msg.content,
+      isFromUser: msg.role === 'user',
+      timestamp: new Date(msg.created_at)
+    })).sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime()) // Sort chronologically
+  } catch (error) {
+    console.error('Failed to fetch messages:', error)
+    notificationStore.error('메시지를 불러오는데 실패했습니다.')
+  } finally {
+    loading.value = false
+  }
+}
+
+// Methods
+const selectUser = async (user: User) => {
+  selectedUser.value = user
+  selectedCharacter.value = null
+  allChats.value = []
+  
+  // Fetch character stats for this user
+  await fetchUserCharacters(user.user_id)
+}
+
+const selectCharacter = async (character: CharacterChat) => {
   selectedCharacter.value = character
+  
+  // Fetch messages for this user-character pair
+  if (selectedUser.value) {
+    await fetchChats(selectedUser.value.user_id, character.character_id)
+  }
 }
 
 const formatDate = (date: Date) => {
@@ -430,14 +407,19 @@ const formatTime = (date: Date) => {
 const isNewDay = (index: number) => {
   if (index === 0) return true
   
-  const currentMessage = allMessages.value[index]
-  const previousMessage = allMessages.value[index - 1]
+  const currentMessage = allChats.value[index]
+  const previousMessage = allChats.value[index - 1]
   
   const currentDate = new Date(currentMessage.timestamp).toDateString()
   const previousDate = new Date(previousMessage.timestamp).toDateString()
   
   return currentDate !== previousDate
 }
+
+// Lifecycle
+onMounted(() => {
+  fetchUsers()
+})
 </script>
 
 <style scoped>
@@ -1004,5 +986,77 @@ const isNewDay = (index: number) => {
   .character-grid {
     grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   }
+}
+
+/* Loading States */
+.loading-users {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: #64748b;
+}
+
+.loading-spinner-small {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #E5E7EB;
+  border-top-color: #B8EEA2;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 0.5rem;
+}
+
+.loading-characters,
+.loading-messages {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  color: #64748b;
+}
+
+.empty-characters {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  text-align: center;
+  color: #64748b;
+}
+
+.empty-characters .empty-icon {
+  width: 80px;
+  height: 80px;
+  background: #f1f5f9;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+
+.empty-characters .empty-icon svg {
+  width: 40px;
+  height: 40px;
+  color: #94a3b8;
+}
+
+.empty-characters h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
+  color: #1a202c;
+}
+
+.empty-characters p {
+  margin: 0;
+  color: #64748b;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 </style>

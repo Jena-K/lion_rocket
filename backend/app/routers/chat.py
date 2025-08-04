@@ -1,6 +1,6 @@
 """
 Refactored chat router without chat creation.
-Messages are logged directly with conversation context.
+Chats are logged directly with conversation context.
 """
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
@@ -16,8 +16,9 @@ import os
 
 from app.database import get_db
 from app.core.auth import get_current_user
-from app.models import User, Message, Character, ConversationSummary
-from app.schemas.chat import MessageCreate, MessageResponse, MessageRole
+from app.models import User, Chat, Character, ConversationSummary
+from app.schemas.chat import ChatCreate, ChatResponse, ChatRole
+from app.services.chat_service import ChatService
 
 router = APIRouter()
 
@@ -53,25 +54,24 @@ class ConnectionManager:
 manager = ConnectionManager()
 
 
-async def get_recent_messages(
+async def get_recent_chats(
     db: AsyncSession,
     user_id: int,
     character_id: int,
     limit: int = 20
-) -> List[Message]:
-    """Get recent messages between user and character"""
-    # Note: Since we removed chat_id, we need a new way to identify messages
-    # We'll use user_id and character_id combination
-    query = select(Message).where(
-        Message.user_id == user_id,
-        Message.character_id == character_id
-    ).order_by(Message.created_at.desc()).limit(limit)
+) -> List[Chat]:
+    """Get recent chats between user and character"""
+    # We use user_id and character_id combination to identify chats
+    query = select(Chat).where(
+        Chat.user_id == user_id,
+        Chat.character_id == character_id
+    ).order_by(Chat.created_at.desc()).limit(limit)
     
     result = await db.execute(query)
-    messages = result.scalars().all()
+    chats = result.scalars().all()
     
     # Return in chronological order
-    return list(reversed(messages))
+    return list(reversed(chats))
 
 
 async def get_conversation_summary(
@@ -95,16 +95,16 @@ async def generate_conversation_summary(
     db: AsyncSession,
     user_id: int,
     character_id: int,
-    recent_messages: List[Message]
+    recent_chats: List[Chat]
 ) -> Optional[str]:
     """Generate a new conversation summary using Claude"""
-    if len(recent_messages) < 10:  # Don't summarize if too few messages
+    if len(recent_chats) < 10:  # Don't summarize if too few chats
         return None
     
     # Prepare conversation text
     conversation_text = ""
-    for msg in recent_messages:
-        role = "사용자" if msg.role == MessageRole.USER else "AI"
+    for msg in recent_chats:
+        role = "사용자" if msg.role == ChatRole.USER else "AI"
         conversation_text += f"{role}: {msg.content}\n\n"
     
     # Get existing summary if any
@@ -148,7 +148,7 @@ async def generate_conversation_summary(
             user_id=user_id,
             character_id=character_id,
             summary=summary_text,
-            message_count=len(recent_messages)
+            chat_count=len(recent_chats)
         )
         db.add(summary)
         await db.commit()
@@ -160,29 +160,32 @@ async def generate_conversation_summary(
         return None
 
 
-@router.post("/messages", response_model=MessageResponse)
-async def send_message(
-    message_create: MessageCreate,
+@router.post("", response_model=ChatResponse)
+@router.post("/", response_model=ChatResponse)
+async def send_chat(
+    chat_create: ChatCreate,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
     """Send a message and get AI response"""
     # Validate character exists
-    character = await db.get(Character, message_create.character_id)
+    character = await db.get(Character, chat_create.character_id)
     if not character:
         raise HTTPException(status_code=404, detail="Character not found")
     
-    # Create user message (without chat_id)
-    user_message = Message(
+    # Create user chat
+    user_chat = Chat(
         user_id=current_user.user_id,
         character_id=character.character_id,
-        role=MessageRole.USER,
-        content=message_create.content,
+        role=ChatRole.USER,
+        content=chat_create.content,
         is_from_user=True
     )
-    db.add(user_message)
+    db.add(user_chat)
     await db.commit()
-    await db.refresh(user_message)
+    await db.refresh(user_chat)
+    
+    print(f"✅ User chat saved: ID={user_chat.chat_id}, User={current_user.user_id}, Character={character.character_id}, Content='{chat_create.content[:50]}...'") 
     
     # Broadcast user message
     await manager.broadcast_to_user(
@@ -190,25 +193,25 @@ async def send_message(
         {
             "type": "message",
             "character_id": character.character_id,
-            "message": MessageResponse.model_validate(user_message).model_dump(),
+            "chat": ChatResponse.model_validate(user_chat).model_dump(),
         },
     )
     
     # Generate AI response asynchronously
     asyncio.create_task(
         generate_ai_response(
-            user_message,
+            user_chat,
             character,
             current_user.user_id,
             db
         )
     )
     
-    return MessageResponse.model_validate(user_message)
+    return ChatResponse.model_validate(user_chat)
 
 
 async def generate_ai_response(
-    user_message: Message,
+    user_chat: Chat,
     character: Character,
     user_id: int,
     db: AsyncSession
@@ -216,7 +219,7 @@ async def generate_ai_response(
     """Generate AI response using direct Anthropic API"""
     try:
         # Get recent conversation history
-        recent_messages = await get_recent_messages(
+        recent_chats = await get_recent_chats(
             db, user_id, character.character_id, limit=20
         )
         
@@ -227,12 +230,12 @@ async def generate_ai_response(
         
         # Prepare messages for Claude
         messages = []
-        for msg in recent_messages[:-1]:  # Exclude the current message
-            role = "user" if msg.role == MessageRole.USER else "assistant"
+        for msg in recent_chats[:-1]:  # Exclude the current chat
+            role = "user" if msg.role == ChatRole.USER else "assistant"
             messages.append({"role": role, "content": msg.content})
         
         # Add the current user message
-        messages.append({"role": "user", "content": user_message.content})
+        messages.append({"role": "user", "content": user_chat.content})
         
         # Prepare system prompt with character prompt and conversation context
         system_prompt = character.prompt
@@ -240,24 +243,24 @@ async def generate_ai_response(
             system_prompt += f"\n\n[이전 대화 요약]\n{conversation_summary}\n\n위 요약을 참고하여 일관성 있는 대화를 이어가주세요."
         
         # Create AI message placeholder
-        ai_message = Message(
+        ai_chat = Chat(
             user_id=user_id,
             character_id=character.character_id,
-            role=MessageRole.ASSISTANT,
+            role=ChatRole.ASSISTANT,
             content="",
-            is_from_user=False
+            token_cost=0  # Will be updated after response
         )
-        db.add(ai_message)
+        db.add(ai_chat)
         await db.commit()
-        await db.refresh(ai_message)
+        await db.refresh(ai_chat)
         
         # Broadcast AI message start
         await manager.broadcast_to_user(
             user_id,
             {
-                "type": "message_start",
+                "type": "chat_start",
                 "character_id": character.character_id,
-                "message": MessageResponse.model_validate(ai_message).model_dump(),
+                "chat": ChatResponse.model_validate(ai_chat).model_dump(),
             },
         )
         
@@ -271,24 +274,38 @@ async def generate_ai_response(
         )
         
         # Update AI message with response
-        ai_message.content = response.content[0].text
-        ai_message.token_count = response.usage.input_tokens + response.usage.output_tokens
+        ai_chat.content = response.content[0].text
         await db.commit()
         
-        # Check if we need to generate a summary (every 20 messages)
-        total_messages = len(recent_messages) + 2  # Include current exchange
-        if total_messages % 20 == 0:
+        print(f"✅ AI response saved: ID={ai_chat.chat_id}, Character={character.character_id}, Content='{response.content[0].text[:50]}...'")
+        
+        # Track token usage
+        total_tokens = 0
+        if hasattr(response, 'usage'):
+            total_tokens = response.usage.input_tokens + response.usage.output_tokens
+            # Update AI message with token cost
+            ai_chat.token_cost = total_tokens
+            await db.commit()
+        
+        # Update usage statistics with token information
+        await ChatService.update_usage_stats(
+            db, user_id, character.character_id, total_tokens
+        )
+        
+        # Check if we need to generate a summary (every 20 chats)
+        total_chats = len(recent_chats) + 2  # Include current exchange
+        if total_chats % 20 == 0:
             await generate_conversation_summary(
-                db, user_id, character.character_id, recent_messages + [user_message, ai_message]
+                db, user_id, character.character_id, recent_chats + [user_chat, ai_chat]
             )
         
         # Broadcast completion
         await manager.broadcast_to_user(
             user_id,
             {
-                "type": "message_complete",
+                "type": "chat_complete",
                 "character_id": character.character_id,
-                "message": MessageResponse.model_validate(ai_message).model_dump(),
+                "chat": ChatResponse.model_validate(ai_chat).model_dump(),
             },
         )
         
@@ -311,49 +328,90 @@ async def generate_ai_response(
             {"type": "error", "character_id": character.character_id, "error": error_msg}
         )
     except Exception as e:
+        # Create a simple fallback response when AI service fails
+        fallback_response = "죄송합니다. 현재 AI 서비스에 문제가 있어 응답을 생성할 수 없습니다. 잠시 후 다시 시도해주세요."
+        
+        # Update AI message with fallback response
+        ai_chat.content = fallback_response
+        await db.commit()
+        
+        # Broadcast fallback response
         await manager.broadcast_to_user(
             user_id,
-            {"type": "error", "character_id": character.character_id, "error": str(e)}
+            {
+                "type": "chat_complete",
+                "character_id": character.character_id,
+                "chat": ChatResponse.model_validate(ai_chat).model_dump(),
+                "is_fallback": True
+            },
         )
+        
+        print(f"AI service error, using fallback response: {str(e)}")
 
 
-@router.get("/messages")
-async def get_messages(
+@router.get("")
+@router.get("/")
+async def get_chats(
     character_id: int,
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Get messages between user and character"""
+    """Get chats between user and character"""
     # Verify character exists
     character = await db.get(Character, character_id)
     if not character:
         raise HTTPException(status_code=404, detail="Character not found")
     
-    # Get messages
-    query = select(Message).where(
-        Message.user_id == current_user.user_id,
-        Message.character_id == character_id
-    ).order_by(Message.created_at.desc()).offset(skip).limit(limit)
+    # Get chats
+    query = select(Chat).where(
+        Chat.user_id == current_user.user_id,
+        Chat.character_id == character_id
+    ).order_by(Chat.created_at.desc()).offset(skip).limit(limit)
     
     result = await db.execute(query)
-    messages = result.scalars().all()
+    chats = result.scalars().all()
     
     # Return in chronological order
-    messages.reverse()
+    chats.reverse()
     
-    return [MessageResponse.model_validate(msg) for msg in messages]
+    return [ChatResponse.model_validate(chat) for chat in chats]
+
+
+async def get_user_from_token(
+    token: str, db: AsyncSession
+) -> Optional[User]:
+    """Get user from JWT token for SSE authentication"""
+    from app.core.auth import verify_token
+    from sqlalchemy import select
+    
+    payload = verify_token(token)
+    if payload is None:
+        return None
+
+    username: str = payload.get("sub")
+    if username is None:
+        return None
+
+    result = await db.execute(select(User).filter(User.username == username))
+    user = result.scalar_one_or_none()
+    return user
 
 
 @router.get("/stream/{character_id}")
 async def message_stream(
     character_id: int,
     request: Request,
-    current_user: User = Depends(get_current_user),
+    token: str = Query(..., description="JWT authentication token"),
     db: AsyncSession = Depends(get_db),
 ):
-    """Server-Sent Events endpoint for real-time messages"""
+    """Server-Sent Events endpoint for real-time chats"""
+    # Authenticate user from token
+    current_user = await get_user_from_token(token, db)
+    if not current_user:
+        raise HTTPException(status_code=401, detail="Invalid authentication token")
+    
     # Verify character exists
     character = await db.get(Character, character_id)
     if not character:
@@ -376,10 +434,10 @@ async def message_stream(
                     break
                 
                 try:
-                    # Wait for messages with timeout for keep-alive
+                    # Wait for chats with timeout for keep-alive
                     message = await asyncio.wait_for(queue.get(), timeout=30.0)
                     
-                    # Only send messages for this character
+                    # Only send chats for this character
                     if message.get("character_id") == character_id:
                         yield {
                             "event": message.get("type", "message"),
@@ -410,17 +468,17 @@ async def end_conversation(
     if not character:
         raise HTTPException(status_code=404, detail="Character not found")
     
-    # Get recent messages
-    recent_messages = await get_recent_messages(
+    # Get recent chats
+    recent_chats = await get_recent_chats(
         db, current_user.user_id, character_id, limit=50
     )
     
-    if not recent_messages:
-        return {"message": "No messages to summarize", "summary_created": False}
+    if not recent_chats:
+        return {"message": "No chats to summarize", "summary_created": False}
     
     # Generate summary
     summary = await generate_conversation_summary(
-        db, current_user.user_id, character_id, recent_messages
+        db, current_user.user_id, character_id, recent_chats
     )
     
     return {

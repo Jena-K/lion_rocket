@@ -41,15 +41,14 @@
               <th>이메일</th>
               <th>권한</th>
               <th>채팅 수</th>
-              <th>토큰 사용량</th>
               <th>마지막 활동</th>
               <th>가입일</th>
               <th>작업</th>
             </tr>
           </thead>
           <tbody>
-            <tr v-for="user in users" :key="user.id">
-              <td>{{ user.id }}</td>
+            <tr v-for="user in users" :key="user.user_id">
+              <td>{{ user.user_id }}</td>
               <td>
                 <div class="user-info">
                   <span>{{ user.username }}</span>
@@ -62,7 +61,6 @@
                 </span>
               </td>
               <td>{{ user.total_chats || 0 }}</td>
-              <td>{{ formatTokens(user.total_tokens || 0) }}</td>
               <td>{{ user.last_active ? formatDate(user.last_active) : '-' }}</td>
               <td>{{ formatDate(user.created_at) }}</td>
               <td>
@@ -70,7 +68,7 @@
                   <button
                     @click="toggleAdmin(user)"
                     class="action-btn admin-btn"
-                    :disabled="user.id === authStore.user?.id"
+                    :disabled="user.user_id === authStore.user?.user_id"
                     :title="user.is_admin ? '관리자 권한 해제' : '관리자 권한 부여'"
                   >
                     <svg v-if="user.is_admin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -86,7 +84,7 @@
                   <button
                     @click="confirmDelete(user)"
                     class="action-btn delete-btn"
-                    :disabled="user.id === authStore.user?.id"
+                    :disabled="user.user_id === authStore.user?.user_id"
                     title="삭제"
                   >
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

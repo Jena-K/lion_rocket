@@ -25,7 +25,7 @@ try:
     print("   [OK] Database and auth imported successfully")
     
     print("\n3. Importing models...")
-    from app.models import User, Chat, Message, UsageStat, Character
+    from app.models import User, Message, UsageStat, Character
     print("   [OK] Models imported successfully")
     
     print("\n4. Importing schemas...")

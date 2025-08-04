@@ -77,8 +77,23 @@ app.add_middleware(
         "http://127.0.0.1:5178",      # Vite current with 127.0.0.1
     ],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "HEAD", "PATCH"],
+    allow_headers=[
+        "Accept",
+        "Accept-Language",
+        "Authorization",
+        "Content-Type",
+        "X-Request-ID",
+        "X-Correlation-ID", 
+        "X-User-ID",
+        "Origin",
+        "Referer",
+        "User-Agent",
+        "Cache-Control",
+        "Pragma",
+        "Expires",
+        "X-Requested-With"
+    ],
 )
 
 # 6. Timing - Measure response times
@@ -164,29 +179,226 @@ async def health_check():
     return {"status": "healthy", "service": "LionRocket AI Chat"}
 
 
+@app.get("/images/avatars/{avatar_url}")
+async def serve_avatar_image(avatar_url: str):
+    """
+    Serve avatar images from /images/{avatar_url} endpoint
+    
+    This endpoint serves character avatar images stored in the uploads/avatars directory.
+    The frontend can access avatars using: GET /images/avatars/{avatar_url}
+    
+    Args:
+        avatar_url: The avatar URL (without extension)
+        
+    Returns:
+        FileResponse: The avatar image file (PNG format)
+        
+    Raises:
+        HTTPException: 400 if path traversal detected, 404 if file not found
+    """
+    from fastapi import HTTPException
+    
+    # Prevent path traversal attacks
+    if '..' in avatar_url or '/' in avatar_url or '\\' in avatar_url:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid avatar URL. Path traversal not allowed."
+        )
+    
+    # Construct the full path to the avatar file
+    avatar_path = Path("uploads/avatars") / f"{avatar_url}.png"
+    
+    # Ensure the path is within the allowed directory
+    try:
+        avatar_path = avatar_path.resolve()
+        uploads_dir = Path("uploads/avatars").resolve()
+        if not str(avatar_path).startswith(str(uploads_dir)):
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid avatar path"
+            )
+    except Exception:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid avatar path"
+        )
+    
+    # Check if file exists
+    if not avatar_path.exists():
+        raise HTTPException(
+            status_code=404, 
+            detail="Avatar image not found"
+        )
+    
+    # Check if it's actually a file (not a directory)
+    if not avatar_path.is_file():
+        raise HTTPException(
+            status_code=404,
+            detail="Avatar path is not a file"
+        )
+    
+    return FileResponse(
+        path=str(avatar_path),
+        media_type="image/png",
+        filename=f"avatar_{avatar_url}.png",
+        headers={
+            "Cache-Control": "public, max-age=3600",  # Cache for 1 hour
+            "X-Content-Type-Options": "nosniff",
+            "Access-Control-Allow-Origin": "*",  # Allow cross-origin requests for images
+            "Access-Control-Allow-Methods": "GET",
+            "Access-Control-Allow-Headers": "Content-Type"
+        }
+    )
+
+
+@app.get("/images/avatar/{parameter}")
+async def serve_avatar_generic(parameter: str):
+    """
+    Serve avatar images from /backend/uploads/avatars/{parameter}.png
+    
+    This endpoint serves avatar PNG images based on a generic parameter.
+    The frontend can access avatars using: GET /images/avatar/{parameter}
+    
+    Args:
+        parameter: The avatar identifier (without .png extension)
+        
+    Returns:
+        FileResponse: The avatar image file (PNG format)
+        
+    Raises:
+        HTTPException: 400 if parameter is invalid, 404 if file not found
+    """
+    from fastapi import HTTPException
+    import re
+    import os
+    
+    # Basic validation - allow alphanumeric, underscore, and hyphen
+    if not re.match(r'^[a-zA-Z0-9_-]+$', parameter):
+        raise HTTPException(
+            status_code=400, 
+            detail="Invalid parameter format. Only alphanumeric characters, underscores, and hyphens are allowed."
+        )
+    
+    # Prevent path traversal attacks
+    if '..' in parameter or '/' in parameter or '\\' in parameter:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid parameter. Path traversal not allowed."
+        )
+    
+    # Construct the full path to the avatar file - using absolute path from backend root
+    backend_root = Path(__file__).parent.parent  # Goes up from app/main.py to backend/
+    avatar_path = backend_root / "uploads" / "avatars" / f"{parameter}.png"
+    
+    # Ensure the path is within the allowed directory
+    try:
+        avatar_path = avatar_path.resolve()
+        uploads_dir = (backend_root / "uploads" / "avatars").resolve()
+        if not str(avatar_path).startswith(str(uploads_dir)):
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid avatar path"
+            )
+    except Exception:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid avatar path"
+        )
+    
+    # Check if file exists
+    if not avatar_path.exists():
+        raise HTTPException(
+            status_code=404, 
+            detail=f"Avatar image not found: {parameter}.png"
+        )
+    
+    # Check if it's actually a file (not a directory)
+    if not avatar_path.is_file():
+        raise HTTPException(
+            status_code=404,
+            detail="Avatar path is not a file"
+        )
+    
+    return FileResponse(
+        path=str(avatar_path),
+        media_type="image/png",
+        filename=f"{parameter}.png",
+        headers={
+            "Cache-Control": "public, max-age=3600",  # Cache for 1 hour
+            "X-Content-Type-Options": "nosniff",
+            "Access-Control-Allow-Origin": "*",  # Allow cross-origin requests for images
+            "Access-Control-Allow-Methods": "GET",
+            "Access-Control-Allow-Headers": "Content-Type"
+        }
+    )
+
+
 @app.get("/avatars/{avatar_filename}")
 async def serve_avatar(avatar_filename: str):
     """
-    Serve avatar images directly from /avatars/{filename}
+    Serve avatar images
+    
+    This endpoint serves character avatar images stored in the uploads/avatars directory.
+    The frontend can access avatars using: GET /avatars/{avatar_filename}
     
     Args:
         avatar_filename: The avatar filename (without extension)
         
     Returns:
-        FileResponse: The avatar image file
+        FileResponse: The avatar image file (PNG format)
+        
+    Raises:
+        HTTPException: 400 if path traversal detected, 404 if file not found
     """
     from fastapi import HTTPException
+    
+    # Prevent path traversal attacks
+    if '..' in avatar_filename or '/' in avatar_filename or '\\' in avatar_filename:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid avatar filename. Path traversal not allowed."
+        )
     
     # Construct the full path to the avatar file
     avatar_path = Path("app/uploads/avatars") / f"{avatar_filename}.png"
     
+    # Ensure the path is within the allowed directory
+    try:
+        avatar_path = avatar_path.resolve()
+        uploads_dir = Path("app/uploads/avatars").resolve()
+        if not str(avatar_path).startswith(str(uploads_dir)):
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid avatar path"
+            )
+    except Exception:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid avatar path"
+        )
+    
+    # Check if file exists
     if not avatar_path.exists():
-        raise HTTPException(status_code=404, detail="Avatar not found")
+        raise HTTPException(
+            status_code=404, 
+            detail="Avatar image not found"
+        )
+    
+    # Check if it's actually a file (not a directory)
+    if not avatar_path.is_file():
+        raise HTTPException(
+            status_code=404,
+            detail="Avatar path is not a file"
+        )
     
     return FileResponse(
         path=str(avatar_path),
         media_type="image/png",
-        filename=f"avatar_{avatar_filename}.png"
+        filename=f"avatar_{avatar_filename}.png",
+        headers={
+            "Cache-Control": "public, max-age=3600",  # Cache for 1 hour
+            "X-Content-Type-Options": "nosniff"
+        }
     )
 
 

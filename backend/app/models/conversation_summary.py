@@ -11,7 +11,7 @@ from .base import Base
 class ConversationSummary(Base):
     __tablename__ = "conversation_summaries"
 
-    id = Column(Integer, primary_key=True, index=True)
+    conversation_summary_id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False, index=True)
     character_id = Column(Integer, ForeignKey("characters.character_id"), nullable=False, index=True)
     summary = Column(Text, nullable=False)

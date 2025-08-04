@@ -37,7 +37,7 @@ class AdminLogin(BaseModel):
 
 class UserResponse(UserBase):
     """Schema for user response (excludes sensitive data)"""
-    id: int
+    user_id: int
     is_admin: bool
     is_active: bool
     created_at: datetime

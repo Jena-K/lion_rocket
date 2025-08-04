@@ -5,8 +5,9 @@ from sqlalchemy import select
 from datetime import timedelta
 
 from app.database import get_db
-from app.models import User
-from app.schemas.user import UserCreate, UserResponse, TokenResponse, UserLogin, AdminLogin
+from app.models import User, UsageStat
+from app.schemas.user import UserCreate, UserResponse, TokenResponse, UserLogin, AdminLogin, UserWithStats
+from sqlalchemy import func
 from app.auth.jwt import (
     create_access_token,
     verify_password,
@@ -139,6 +140,43 @@ async def logout():
 async def get_current_user_info(current_user: User = Depends(get_current_user)):
     """현재 사용자 정보 조회"""
     return current_user
+
+
+@auth_router.get("/me/stats", response_model=UserWithStats)
+async def get_current_user_stats(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """현재 사용자 통계 정보 조회 (토큰 사용량 포함)"""
+    
+    # Get user's total stats
+    stats_result = await db.execute(
+        select(
+            func.coalesce(func.sum(UsageStat.chat_count), 0).label('total_chats'),
+            func.coalesce(func.sum(UsageStat.message_count), 0).label('total_messages'),
+            func.coalesce(func.sum(UsageStat.token_count), 0).label('total_tokens'),
+            func.coalesce(func.sum(UsageStat.input_tokens), 0).label('total_input_tokens'),
+            func.coalesce(func.sum(UsageStat.output_tokens), 0).label('total_output_tokens')
+        ).where(UsageStat.user_id == current_user.user_id)
+    )
+    stats = stats_result.one()
+    
+    # Get character count (simplified - assume we don't track this separately)
+    character_count = 0  # Could be enhanced to count unique characters the user has chatted with
+    
+    return UserWithStats(
+        user_id=current_user.user_id,
+        username=current_user.username,
+        email=current_user.email,
+        is_admin=current_user.is_admin,
+        is_active=current_user.is_active,
+        created_at=current_user.created_at,
+        updated_at=current_user.updated_at,
+        total_chats=stats.total_chats,
+        total_tokens=stats.total_tokens,
+        total_characters=character_count,
+        total_prompts=stats.total_messages  # Using message count as prompt count
+    )
 
 
 @auth_router.post(

@@ -36,85 +36,56 @@
 
     <!-- Quick Stats Cards -->
     <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-icon blue">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
-          </svg>
-        </div>
-        <div class="stat-content">
-          <h3 class="stat-label">총 채팅 수</h3>
-          <p class="stat-value">{{ totalChats.toLocaleString() }}</p>
-          <p class="stat-change positive">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
-              <polyline points="17 6 23 6 23 12"></polyline>
-            </svg>
-            +12.5% 전일 대비
-          </p>
+      <div class="stat-card" v-if="isLoading">
+        <div class="stat-loading">
+          <div class="loading-spinner"></div>
+          <p>데이터 로딩 중...</p>
         </div>
       </div>
+      
+      <template v-else>
+        <div class="stat-card">
+          <div class="stat-icon blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+            </svg>
+          </div>
+          <div class="stat-content">
+            <h3 class="stat-label">총 채팅 수</h3>
+            <p class="stat-value">{{ dashboardStats.total_chats?.toLocaleString() || '0' }}</p>
+            <p class="stat-change neutral">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+              </svg>
+              실제 데이터
+            </p>
+          </div>
+        </div>
 
-      <div class="stat-card">
-        <div class="stat-icon green">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-            <circle cx="9" cy="7" r="4"></circle>
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-          </svg>
-        </div>
-        <div class="stat-content">
-          <h3 class="stat-label">활성 사용자</h3>
-          <p class="stat-value">{{ activeUsers.toLocaleString() }}</p>
-          <p class="stat-change positive">
+        <div class="stat-card">
+          <div class="stat-icon green">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
-              <polyline points="17 6 23 6 23 12"></polyline>
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
             </svg>
-            +8.3% 전주 대비
-          </p>
+          </div>
+          <div class="stat-content">
+            <h3 class="stat-label">사용자 수</h3>
+            <p class="stat-value">{{ dashboardStats.total_users?.toLocaleString() || '0' }}</p>
+            <p class="stat-change neutral">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg>
+              실제 데이터
+            </p>
+          </div>
         </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-icon purple">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="3" y="11" width="18" height="10" rx="2" ry="2"></rect>
-            <circle cx="12" cy="5" r="2"></circle>
-            <path d="M12 7v4"></path>
-          </svg>
-        </div>
-        <div class="stat-content">
-          <h3 class="stat-label">활성 캐릭터</h3>
-          <p class="stat-value">{{ activeCharacters }}</p>
-          <p class="stat-change neutral">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="5" y1="12" x2="19" y2="12"></line>
-            </svg>
-            변동 없음
-          </p>
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <div class="stat-icon orange">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-          </svg>
-        </div>
-        <div class="stat-content">
-          <h3 class="stat-label">평균 대화 시간</h3>
-          <p class="stat-value">{{ avgChatDuration }}분</p>
-          <p class="stat-change negative">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline>
-              <polyline points="17 18 23 18 23 12"></polyline>
-            </svg>
-            -3.2% 전일 대비
-          </p>
-        </div>
-      </div>
+      </template>
     </div>
 
     <!-- View Tabs -->
@@ -188,6 +159,43 @@
                 <circle cx="650" cy="90" r="4" fill="#3b82f6" />
                 <circle cx="750" cy="80" r="4" fill="#3b82f6" />
               </g>
+              
+              <!-- Axis scales -->
+              <g class="axis-scales">
+                <!-- Y-axis scale (numbers) -->
+                <text x="45" y="255" text-anchor="end" fill="#6b7280" font-size="10" font-family="Inter, system-ui, sans-serif">0</text>
+                <text x="45" y="205" text-anchor="end" fill="#6b7280" font-size="10" font-family="Inter, system-ui, sans-serif">10</text>
+                <text x="45" y="155" text-anchor="end" fill="#6b7280" font-size="10" font-family="Inter, system-ui, sans-serif">20</text>
+                <text x="45" y="105" text-anchor="end" fill="#6b7280" font-size="10" font-family="Inter, system-ui, sans-serif">30</text>
+                <text x="45" y="55" text-anchor="end" fill="#6b7280" font-size="10" font-family="Inter, system-ui, sans-serif">40</text>
+                
+                <!-- Y-axis tick marks -->
+                <line x1="45" y1="250" x2="50" y2="250" stroke="#6b7280" stroke-width="1" />
+                <line x1="45" y1="200" x2="50" y2="200" stroke="#6b7280" stroke-width="1" />
+                <line x1="45" y1="150" x2="50" y2="150" stroke="#6b7280" stroke-width="1" />
+                <line x1="45" y1="100" x2="50" y2="100" stroke="#6b7280" stroke-width="1" />
+                <line x1="45" y1="50" x2="50" y2="50" stroke="#6b7280" stroke-width="1" />
+                
+                <!-- X-axis scale (dates) -->
+                <text x="50" y="270" text-anchor="middle" fill="#6b7280" font-size="10" font-family="Inter, system-ui, sans-serif">07/28</text>
+                <text x="150" y="270" text-anchor="middle" fill="#6b7280" font-size="10" font-family="Inter, system-ui, sans-serif">07/29</text>
+                <text x="250" y="270" text-anchor="middle" fill="#6b7280" font-size="10" font-family="Inter, system-ui, sans-serif">07/30</text>
+                <text x="350" y="270" text-anchor="middle" fill="#6b7280" font-size="10" font-family="Inter, system-ui, sans-serif">07/31</text>
+                <text x="450" y="270" text-anchor="middle" fill="#6b7280" font-size="10" font-family="Inter, system-ui, sans-serif">08/01</text>
+                <text x="550" y="270" text-anchor="middle" fill="#6b7280" font-size="10" font-family="Inter, system-ui, sans-serif">08/02</text>
+                <text x="650" y="270" text-anchor="middle" fill="#6b7280" font-size="10" font-family="Inter, system-ui, sans-serif">08/03</text>
+                <text x="750" y="270" text-anchor="middle" fill="#6b7280" font-size="10" font-family="Inter, system-ui, sans-serif">08/04</text>
+                
+                <!-- X-axis tick marks -->
+                <line x1="50" y1="250" x2="50" y2="255" stroke="#6b7280" stroke-width="1" />
+                <line x1="150" y1="250" x2="150" y2="255" stroke="#6b7280" stroke-width="1" />
+                <line x1="250" y1="250" x2="250" y2="255" stroke="#6b7280" stroke-width="1" />
+                <line x1="350" y1="250" x2="350" y2="255" stroke="#6b7280" stroke-width="1" />
+                <line x1="450" y1="250" x2="450" y2="255" stroke="#6b7280" stroke-width="1" />
+                <line x1="550" y1="250" x2="550" y2="255" stroke="#6b7280" stroke-width="1" />
+                <line x1="650" y1="250" x2="650" y2="255" stroke="#6b7280" stroke-width="1" />
+                <line x1="750" y1="250" x2="750" y2="255" stroke="#6b7280" stroke-width="1" />
+              </g>
             </svg>
           </div>
         </div>
@@ -201,7 +209,6 @@
                 <th>날짜</th>
                 <th>총 채팅 수</th>
                 <th>활성 사용자</th>
-                <th>평균 대화 시간</th>
                 <th>인기 캐릭터</th>
               </tr>
             </thead>
@@ -210,7 +217,6 @@
                 <td>{{ formatDate(day.date) }}</td>
                 <td>{{ day.chatCount.toLocaleString() }}</td>
                 <td>{{ day.userCount }}</td>
-                <td>{{ day.avgDuration }}분</td>
                 <td>
                   <span class="character-badge">{{ day.topCharacter }}</span>
                 </td>
@@ -234,7 +240,7 @@
 
           <!-- User Ranking Cards -->
           <div class="user-ranking">
-            <div v-for="(user, index) in topUsers" :key="user.id" class="user-rank-card">
+            <div v-for="(user, index) in topUsers" :key="user.user_id" class="user-rank-card">
               <div class="rank-number" :class="getRankClass(index + 1)">
                 {{ index + 1 }}
               </div>
@@ -251,7 +257,7 @@
                   <span class="mini-label">채팅</span>
                 </div>
                 <div class="mini-stat">
-                  <span class="mini-value">{{ user.messageCount }}</span>
+                  <span class="mini-value">{{ user.chatCount }}</span>
                   <span class="mini-label">메시지</span>
                 </div>
                 <div class="mini-stat">
@@ -289,7 +295,7 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="user in allUsers" :key="user.id">
+              <tr v-for="user in allUsers" :key="user.user_id">
                 <td>
                   <div class="user-cell">
                     <div class="small-avatar">{{ user.name.charAt(0) }}</div>
@@ -300,7 +306,7 @@
                   </div>
                 </td>
                 <td>{{ user.chatCount }}</td>
-                <td>{{ user.messageCount }}</td>
+                <td>{{ user.chatCount }}</td>
                 <td>{{ formatRelativeTime(user.lastActive) }}</td>
                 <td>
                   <span class="character-badge">{{ user.favoriteCharacter }}</span>
@@ -333,7 +339,7 @@
 
           <!-- Character Cards Grid -->
           <div class="character-grid">
-            <div v-for="char in characters" :key="char.id" class="character-stat-card">
+            <div v-for="char in characters" :key="char.character_id" class="character-stat-card">
               <div class="character-header">
                 <div class="character-avatar-large" :style="{ background: char.color }">
                   {{ char.name.charAt(0) }}
@@ -392,21 +398,17 @@
 
         <!-- Character Performance Table -->
         <div class="data-table-container">
-          <h3>캐릭터 성과 분석</h3>
+          <h3>캐릭터 기본 통계</h3>
           <table class="data-table">
             <thead>
               <tr>
                 <th>캐릭터</th>
                 <th>총 대화 수</th>
                 <th>활성 사용자</th>
-                <th>평균 대화 시간</th>
-                <th>재방문율</th>
-                <th>만족도</th>
-                <th>추세</th>
               </tr>
             </thead>
             <tbody>
-              <tr v-for="char in characterTableData" :key="char.id">
+              <tr v-for="char in characterTableData" :key="char.character_id">
                 <td>
                   <div class="character-cell">
                     <div class="small-avatar" :style="{ background: char.color }">
@@ -417,35 +419,6 @@
                 </td>
                 <td>{{ char.totalChats }}</td>
                 <td>{{ char.activeUsers }}</td>
-                <td>{{ char.avgDuration }}분</td>
-                <td>
-                  <div class="progress-bar">
-                    <div class="progress-fill" :style="{ width: char.returnRate + '%' }"></div>
-                    <span class="progress-text">{{ char.returnRate }}%</span>
-                  </div>
-                </td>
-                <td>
-                  <div class="rating">
-                    <svg v-for="i in 5" :key="i" viewBox="0 0 24 24" :fill="i <= char.rating ? '#fbbf24' : 'none'" stroke="#fbbf24" stroke-width="2">
-                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-                    </svg>
-                  </div>
-                </td>
-                <td>
-                  <span :class="['trend', char.trend]">
-                    <svg v-if="char.trend === 'up'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
-                      <polyline points="17 6 23 6 23 12"></polyline>
-                    </svg>
-                    <svg v-else-if="char.trend === 'down'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline>
-                      <polyline points="17 18 23 18 23 12"></polyline>
-                    </svg>
-                    <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                      <line x1="5" y1="12" x2="19" y2="12"></line>
-                    </svg>
-                  </span>
-                </td>
               </tr>
             </tbody>
           </table>
@@ -456,7 +429,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import apiClient from '@/services/api.client'
 
 // Tab icons as inline components
 const CalendarIcon = {
@@ -495,11 +469,13 @@ const currentDate = computed(() => {
   })
 })
 
-// Mock data
-const totalChats = ref(15847)
-const activeUsers = ref(1234)
-const activeCharacters = ref(8)
-const avgChatDuration = ref(18.5)
+// State
+const isLoading = ref(true)
+const dashboardStats = ref({
+  total_chats: 0,
+  total_users: 0
+})
+const errorMessage = ref('')
 
 const tabs = [
   { id: 'date', label: '날짜별 보기', icon: CalendarIcon },
@@ -509,30 +485,30 @@ const tabs = [
 
 // Date view data
 const dateData = ref([
-  { date: new Date('2024-01-15'), chatCount: 2341, userCount: 342, avgDuration: 22, topCharacter: '미나' },
-  { date: new Date('2024-01-14'), chatCount: 2156, userCount: 318, avgDuration: 19, topCharacter: '지우' },
-  { date: new Date('2024-01-13'), chatCount: 1987, userCount: 289, avgDuration: 21, topCharacter: '미나' },
-  { date: new Date('2024-01-12'), chatCount: 2234, userCount: 325, avgDuration: 18, topCharacter: '하늘' },
-  { date: new Date('2024-01-11'), chatCount: 2098, userCount: 301, avgDuration: 20, topCharacter: '미나' },
-  { date: new Date('2024-01-10'), chatCount: 1876, userCount: 278, avgDuration: 17, topCharacter: '소라' },
-  { date: new Date('2024-01-09'), chatCount: 2345, userCount: 356, avgDuration: 23, topCharacter: '미나' }
+  { date: new Date('2024-01-15'), chatCount: 2341, userCount: 342, topCharacter: '미나' },
+  { date: new Date('2024-01-14'), chatCount: 2156, userCount: 318, topCharacter: '지우' },
+  { date: new Date('2024-01-13'), chatCount: 1987, userCount: 289, topCharacter: '미나' },
+  { date: new Date('2024-01-12'), chatCount: 2234, userCount: 325, topCharacter: '하늘' },
+  { date: new Date('2024-01-11'), chatCount: 2098, userCount: 301, topCharacter: '미나' },
+  { date: new Date('2024-01-10'), chatCount: 1876, userCount: 278, topCharacter: '소라' },
+  { date: new Date('2024-01-09'), chatCount: 2345, userCount: 356, topCharacter: '미나' }
 ])
 
 // User view data
 const topUsers = ref([
-  { id: 1, name: 'user123', email: 'user123@example.com', chatCount: 234, messageCount: 3421, avgDuration: 25 },
-  { id: 2, name: 'johndoe', email: 'john@example.com', chatCount: 198, messageCount: 2876, avgDuration: 22 },
-  { id: 3, name: 'janedoe', email: 'jane@example.com', chatCount: 176, messageCount: 2543, avgDuration: 19 },
-  { id: 4, name: 'testuser', email: 'test@example.com', chatCount: 165, messageCount: 2234, avgDuration: 18 },
-  { id: 5, name: 'alice', email: 'alice@example.com', chatCount: 143, messageCount: 1987, avgDuration: 21 }
+  { id: 1, name: 'user123', email: 'user123@example.com', chatCount: 234, chatCount: 3421, avgDuration: 25 },
+  { id: 2, name: 'johndoe', email: 'john@example.com', chatCount: 198, chatCount: 2876, avgDuration: 22 },
+  { id: 3, name: 'janedoe', email: 'jane@example.com', chatCount: 176, chatCount: 2543, avgDuration: 19 },
+  { id: 4, name: 'testuser', email: 'test@example.com', chatCount: 165, chatCount: 2234, avgDuration: 18 },
+  { id: 5, name: 'alice', email: 'alice@example.com', chatCount: 143, chatCount: 1987, avgDuration: 21 }
 ])
 
 const allUsers = ref([
-  { id: 1, name: 'user123', email: 'user123@example.com', chatCount: 234, messageCount: 3421, lastActive: new Date('2024-01-15T14:30'), favoriteCharacter: '미나', status: 'active' },
-  { id: 2, name: 'johndoe', email: 'john@example.com', chatCount: 198, messageCount: 2876, lastActive: new Date('2024-01-15T10:20'), favoriteCharacter: '지우', status: 'active' },
-  { id: 3, name: 'janedoe', email: 'jane@example.com', chatCount: 176, messageCount: 2543, lastActive: new Date('2024-01-14T18:45'), favoriteCharacter: '미나', status: 'active' },
-  { id: 4, name: 'testuser', email: 'test@example.com', chatCount: 165, messageCount: 2234, lastActive: new Date('2024-01-13T09:15'), favoriteCharacter: '하늘', status: 'inactive' },
-  { id: 5, name: 'alice', email: 'alice@example.com', chatCount: 143, messageCount: 1987, lastActive: new Date('2024-01-15T16:00'), favoriteCharacter: '소라', status: 'active' }
+  { id: 1, name: 'user123', email: 'user123@example.com', chatCount: 234, chatCount: 3421, lastActive: new Date('2024-01-15T14:30'), favoriteCharacter: '미나', status: 'active' },
+  { id: 2, name: 'johndoe', email: 'john@example.com', chatCount: 198, chatCount: 2876, lastActive: new Date('2024-01-15T10:20'), favoriteCharacter: '지우', status: 'active' },
+  { id: 3, name: 'janedoe', email: 'jane@example.com', chatCount: 176, chatCount: 2543, lastActive: new Date('2024-01-14T18:45'), favoriteCharacter: '미나', status: 'active' },
+  { id: 4, name: 'testuser', email: 'test@example.com', chatCount: 165, chatCount: 2234, lastActive: new Date('2024-01-13T09:15'), favoriteCharacter: '하늘', status: 'inactive' },
+  { id: 5, name: 'alice', email: 'alice@example.com', chatCount: 143, chatCount: 1987, lastActive: new Date('2024-01-15T16:00'), favoriteCharacter: '소라', status: 'active' }
 ])
 
 // Character view data
@@ -544,10 +520,10 @@ const characters = ref([
 ])
 
 const characterTableData = ref([
-  { id: 1, name: '미나', color: '#8b5cf6', totalChats: 4532, activeUsers: 876, avgDuration: 24, returnRate: 78, rating: 5, trend: 'up' },
-  { id: 2, name: '지우', color: '#3b82f6', totalChats: 3421, activeUsers: 654, avgDuration: 21, returnRate: 72, rating: 4, trend: 'up' },
-  { id: 3, name: '하늘', color: '#10b981', totalChats: 2987, activeUsers: 543, avgDuration: 19, returnRate: 68, rating: 4, trend: 'neutral' },
-  { id: 4, name: '소라', color: '#f59e0b', totalChats: 2654, activeUsers: 487, avgDuration: 18, returnRate: 65, rating: 4, trend: 'down' }
+  { id: 1, name: '미나', color: '#8b5cf6', totalChats: 4532, activeUsers: 876 },
+  { id: 2, name: '지우', color: '#3b82f6', totalChats: 3421, activeUsers: 654 },
+  { id: 3, name: '하늘', color: '#10b981', totalChats: 2987, activeUsers: 543 },
+  { id: 4, name: '소라', color: '#f59e0b', totalChats: 2654, activeUsers: 487 }
 ])
 
 // Methods
@@ -575,6 +551,34 @@ const getRankClass = (rank: number) => {
   if (rank === 3) return 'bronze'
   return ''
 }
+
+// Load dashboard data
+const loadDashboardStats = async () => {
+  try {
+    isLoading.value = true
+    errorMessage.value = ''
+    
+    const response = await apiClient.get('/admin/dashboard/simple-stats')
+    dashboardStats.value = response.data
+    
+    console.log('Dashboard stats loaded:', response.data)
+  } catch (error) {
+    console.error('Failed to load dashboard stats:', error)
+    errorMessage.value = 'Dashboard 데이터를 불러오는데 실패했습니다.'
+    // Keep default values in case of error
+    dashboardStats.value = {
+      total_chats: 0,
+      total_users: 0
+    }
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// Load data on component mount
+onMounted(() => {
+  loadDashboardStats()
+})
 </script>
 
 <style scoped>
@@ -1291,6 +1295,30 @@ const getRankClass = (rank: number) => {
 .trend svg {
   width: 16px;
   height: 16px;
+}
+
+/* Loading states */
+.stat-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 2rem;
+}
+
+.loading-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e5e7eb;
+  border-top: 3px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 /* Responsive */

@@ -41,19 +41,12 @@
       <div v-else class="chats-grid">
         <div
           v-for="chat in chats"
-          :key="chat.id"
+          :key="chat.chat_id"
           @click="openChat(chat)"
           class="chat-card"
         >
           <div class="chat-avatar">
-            <img 
-              v-if="chat.character?.avatar_url" 
-              :src="getAvatarUrl(chat.character.avatar_url)" 
-              :alt="chat.character.name" 
-              class="avatar-image"
-              @error="handleImageError"
-            />
-            <span v-else class="avatar-text">{{ chat.character?.name?.charAt(0) || '?' }}</span>
+            <span class="avatar-text">{{ chat.character ? getPlaceholderAvatar(chat.character) : '?' }}</span>
           </div>
           
           <div class="chat-info">
@@ -115,7 +108,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { chatService, type Chat } from '../services/chat.service'
-import { getAvatarUrl } from '../services/avatar.service'
+import { getPlaceholderAvatar } from '../services/avatar.service'
 import { useToast } from 'vue-toastification'
 
 const router = useRouter()
@@ -155,7 +148,7 @@ const loadChats = async () => {
 const openChat = (chat: Chat) => {
   router.push({
     name: 'chat',
-    params: { chatId: chat.id },
+    params: { chatId: chat.chat_id },
     query: { characterId: chat.character_id }
   })
 }
@@ -172,7 +165,7 @@ const deleteChat = async (chat: Chat) => {
   if (!confirm('이 대화를 삭제하시겠습니까?')) return
   
   try {
-    await chatService.deleteChat(chat.id)
+    await chatService.deleteChat(chat.chat_id)
     toast.success('대화가 삭제되었습니다')
     
     // Reload chats
@@ -210,12 +203,6 @@ const formatDate = (dateString: string) => {
   }
 }
 
-const handleImageError = (event: Event) => {
-  const imgElement = event.target as HTMLImageElement
-  if (imgElement) {
-    imgElement.style.display = 'none'
-  }
-}
 
 // Lifecycle
 onMounted(() => {

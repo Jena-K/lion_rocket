@@ -8,7 +8,7 @@ export class ChatService {
    * Send a message to a character
    */
   async sendMessage(data: MessageCreate & { character_id: number }): Promise<Message> {
-    const response = await apiClient.post('/chats/messages', data)
+    const response = await apiClient.post('/chats/', data)
     return response.data
   }
 
@@ -22,7 +22,7 @@ export class ChatService {
       limit?: number
     }
   ): Promise<Message[]> {
-    const response = await apiClient.get('/chats/messages', {
+    const response = await apiClient.get('/chats/', {
       params: {
         character_id: characterId,
         ...params
@@ -58,9 +58,9 @@ export class ChatService {
       return
     }
 
-    // Create SSE connection
+    // Create SSE connection with token in query params
     const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000'
-    const url = `${baseUrl}/chats/stream/${characterId}`
+    const url = `${baseUrl}/chats/stream/${characterId}?token=${encodeURIComponent(token)}`
 
     const eventSource = new EventSource(url, {
       withCredentials: true,

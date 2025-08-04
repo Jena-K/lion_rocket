@@ -2,7 +2,7 @@ import axios from 'axios'
 
 // Types
 export interface UserProfile {
-  id: number
+  user_id: number
   username: string
   email: string
   is_admin: boolean
@@ -19,21 +19,21 @@ export interface UserStats {
 }
 
 export interface Chat {
-  id: number
+  chat_id: number
   user_id: number
   character_id: number
   created_at: string
   last_message_at: string
   message_count?: number
   character?: {
-    id: number
+    character_id: number
     name: string
     system_prompt: string
   }
 }
 
 export interface ChatMessage {
-  id: number
+  message_id: number
   chat_id: number
   role: 'user' | 'assistant'
   content: string

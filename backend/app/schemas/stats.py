@@ -8,12 +8,12 @@ from typing import Optional, List
 
 class UsageStatResponse(BaseModel):
     """Schema for usage statistics response"""
-    id: int
+    usage_stat_id: int
     user_id: int
     usage_date: date
     chat_count: int
-    message_count: int
-    total_tokens: int
+    chat_count: int
+    token_count: int
     input_tokens: int
     output_tokens: int
     created_at: datetime
@@ -25,12 +25,10 @@ class UsageStatResponse(BaseModel):
 class UsageOverview(BaseModel):
     """Schema for usage overview/summary"""
     total_chats: int
-    total_messages: int
+    total_chats: int
     total_tokens: int
-    input_tokens: int
-    output_tokens: int
-    average_tokens_per_chat: float
-    average_tokens_per_message: float
+    total_input_tokens: int
+    total_output_tokens: int
     period_start: date
     period_end: date
 
@@ -39,8 +37,10 @@ class DailyUsage(BaseModel):
     """Schema for daily usage summary"""
     date: date
     chat_count: int
-    message_count: int
-    total_tokens: int
+    chat_count: int
+    token_count: int
+    input_tokens: int
+    output_tokens: int
 
 
 class AdminStatsResponse(BaseModel):
@@ -48,9 +48,7 @@ class AdminStatsResponse(BaseModel):
     total_users: int
     active_users_today: int
     total_conversations: int
-    total_messages: int
-    total_tokens_used: int
-    average_tokens_per_user: float
+    total_chats: int
 
 
 class UserUsageStats(BaseModel):
@@ -58,7 +56,9 @@ class UserUsageStats(BaseModel):
     user_id: int
     username: str
     total_chats: int
-    total_messages: int
+    total_chats: int
     total_tokens: int
+    total_input_tokens: int
+    total_output_tokens: int
     last_active: Optional[datetime] = None
     daily_usage: List[DailyUsage] = []

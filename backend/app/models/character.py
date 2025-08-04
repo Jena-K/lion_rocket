@@ -32,5 +32,6 @@ class Character(Base):
 
     # Relationships
     creator = relationship("User", back_populates="created_characters")
-    messages = relationship("Message", back_populates="character", cascade="all, delete-orphan")
+    chats = relationship("Chat", back_populates="character", cascade="all, delete-orphan")
     conversation_summaries = relationship("ConversationSummary", back_populates="character", cascade="all, delete-orphan")
+    usage_stats = relationship("UsageStat", back_populates="character", cascade="all, delete-orphan")

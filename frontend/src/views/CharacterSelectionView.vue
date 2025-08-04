@@ -10,6 +10,7 @@
       </div>
       <div class="header-right">
         <span class="user-info">{{ authStore.user?.username }}</span>
+        <button @click="goToProfile" class="profile-btn">프로필</button>
         <button @click="handleLogout" class="logout-btn">로그아웃</button>
       </div>
     </header>
@@ -46,20 +47,21 @@
     <div v-else-if="hasCharacters" class="characters-grid">
       <div
         v-for="character in characters"
-        :key="character.id"
+        :key="character.character_id"
         class="character-card"
         @click="handleSelectCharacter(character)"
       >
         <div class="character-avatar">
           <img 
-            v-if="getAvatarUrl(character.avatar_url)" 
-            :src="getAvatarUrl(character.avatar_url)!" 
-            :alt="character.name" 
+            v-if="getAvatarUrl(character.avatar_url)"
+            :src="getAvatarUrl(character.avatar_url)!"
+            :alt="character.name"
             class="avatar-image"
             @error="handleAvatarError"
+            loading="lazy"
           />
           <div v-else class="avatar-placeholder">
-            {{ character.name.charAt(0).toUpperCase() }}
+            {{ getPlaceholderAvatar(character) }}
           </div>
         </div>
         <div class="character-info">
@@ -85,14 +87,15 @@
         
         <div class="modal-avatar">
           <img 
-            v-if="getAvatarUrl(selectedCharacter.avatar_url)" 
-            :src="getAvatarUrl(selectedCharacter.avatar_url)!" 
-            :alt="selectedCharacter.name" 
+            v-if="getAvatarUrl(selectedCharacter.avatar_url)"
+            :src="getAvatarUrl(selectedCharacter.avatar_url)!"
+            :alt="selectedCharacter.name"
             class="avatar-large-image"
             @error="handleAvatarError"
+            loading="lazy"
           />
           <div v-else class="avatar-large">
-            {{ selectedCharacter.name.charAt(0).toUpperCase() }}
+            {{ getPlaceholderAvatar(selectedCharacter) }}
           </div>
         </div>
         
@@ -141,7 +144,7 @@ import { useNotificationStore } from '@/stores/notification'
 import { characterService } from '@/services/character.service'
 import type { Character, Gender } from '@/types'
 import { Gender as GenderEnum } from '@/types'
-import { getAvatarUrl, handleAvatarError } from '@/services/avatar.service'
+import { getAvatarUrl, getPlaceholderAvatar, handleAvatarError } from '@/services/avatar.service'
 
 const authStore = useAuthStore()
 const router = useRouter()
@@ -184,25 +187,36 @@ const handleLogout = async () => {
   router.push('/login')
 }
 
+const goToProfile = () => {
+  router.push('/profile')
+}
+
 const handleStartChat = async () => {
   console.log('handleStartChat called')
   console.log('selectedCharacter:', selectedCharacter.value)
+  console.log('selectedCharacter.character_id:', selectedCharacter.value?.character_id)
   
-  if (selectedCharacter.value) {
+  if (selectedCharacter.value && selectedCharacter.value.character_id) {
     try {
       console.log('Starting chat with:', selectedCharacter.value.name)
+      console.log('Character ID to pass:', selectedCharacter.value.character_id)
+      
+      // Convert character_id to string as Vue Router expects string params
+      const characterId = String(selectedCharacter.value.character_id)
+      console.log('Converted characterId:', characterId)
       
       // Navigate directly to the chat page with character ID
       router.push({
         name: 'chat',
-        params: { characterId: selectedCharacter.value.id }
+        params: { characterId: characterId }
       })
     } catch (error) {
       console.error('Failed to start chat:', error)
       notificationStore.error('채팅을 시작할 수 없습니다. 다시 시도해주세요.')
     }
   } else {
-    console.log('No character selected')
+    console.log('No character selected or missing character_id')
+    console.log('Character data:', selectedCharacter.value)
     notificationStore.warning('먼저 캐릭터를 선택해주세요.')
   }
 }
@@ -216,6 +230,7 @@ const closeModal = () => {
 
 // Transform API character to Extended character
 const transformCharacter = (char: Character): ExtendedCharacter => {
+  console.log('Transforming character:', char) // Debug log
   return {
     ...char,
     introduction: char.intro,
@@ -338,6 +353,23 @@ onMounted(() => {
   color: #666;
 }
 
+
+.profile-btn {
+  padding: 0.5rem 1rem;
+  background: #E7F7E1;
+  color: #5A8F47;
+  border: 1px solid #B8EEA2;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  transition: all 0.2s;
+}
+
+.profile-btn:hover {
+  background: #D4EFCB;
+  border-color: #9FE88D;
+  transform: translateY(-1px);
+}
 
 .logout-btn {
   padding: 0.5rem 1rem;
@@ -688,26 +720,31 @@ onMounted(() => {
 .start-chat-button {
   width: 100%;
   padding: 1rem;
-  background: #5A8F47;
-  color: white;
-  border: none;
+  background: #F8FAFC;
+  color: #374151;
+  border: 2px solid #E5E7EB;
   border-radius: 8px;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(90, 143, 71, 0.25);
+  box-shadow: none;
 }
 
 .start-chat-button:hover {
-  background: #4A7C3C;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(90, 143, 71, 0.35);
+  background: #FFFFFF;
+  border-color: #D1D5DB;
+  color: #111827;
+  box-shadow: none;
 }
 
 .start-chat-button:focus {
-  background: #3D6630;
-  box-shadow: 0 0 0 3px rgba(184, 238, 162, 0.4);
+  background: #FFFFFF;
+  border-color: #9CA3AF;
+  color: #111827;
+  box-shadow: none;
+  outline: 2px solid rgba(59, 130, 246, 0.3);
+  outline-offset: 2px;
 }
 
 /* Empty State */

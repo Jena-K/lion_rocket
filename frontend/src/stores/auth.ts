@@ -3,14 +3,7 @@ import { ref, computed } from 'vue'
 import apiClient from '../services/api.client'
 import { router } from '../router'
 import { useNotificationStore } from './notification'
-
-interface User {
-  id: number
-  username: string
-  email: string
-  is_admin: boolean
-  created_at: string
-}
+import type { User, UserWithStats } from '../types'
 
 interface LoginCredentials {
   username: string
@@ -68,11 +61,15 @@ export const useAuthStore = defineStore('auth', () => {
 
   const login = async (credentials: LoginCredentials): Promise<void> => {
     try {
-      const formData = new FormData()
+      const formData = new URLSearchParams()
       formData.append('username', credentials.username)
       formData.append('password', credentials.password)
 
-      const response = await apiClient.post<AuthResponse>('/auth/login', formData)
+      const response = await apiClient.post<AuthResponse>('/auth/login', formData, {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        }
+      })
       const authData = response.data
 
       setAuth(authData)
@@ -146,6 +143,16 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  const getCurrentUserStats = async (): Promise<UserWithStats> => {
+    try {
+      const response = await apiClient.get<UserWithStats>('/auth/me/stats')
+      return response.data
+    } catch (error) {
+      console.error('Failed to get user stats:', error)
+      throw error
+    }
+  }
+
   const setAuth = (authData: AuthResponse): void => {
     user.value = authData.user
     token.value = authData.access_token
@@ -187,6 +194,7 @@ export const useAuthStore = defineStore('auth', () => {
     register,
     logout,
     getCurrentUser,
+    getCurrentUserStats,
     setAuth,
     clearAuth,
     refreshToken: async (): Promise<void> => {

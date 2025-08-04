@@ -223,8 +223,8 @@ const handleSubmit = async () => {
     const newCharacter = await characterStore.createCharacter(formData)
     
     // Upload avatar if selected
-    if (selectedAvatar.value && newCharacter.id) {
-      await characterStore.uploadAvatar(newCharacter.id, selectedAvatar.value)
+    if (selectedAvatar.value && newCharacter.character_id) {
+      await characterStore.uploadAvatar(newCharacter.character_id, selectedAvatar.value)
     }
     
     emit('created')

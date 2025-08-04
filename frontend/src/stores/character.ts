@@ -80,7 +80,7 @@ export const useCharacterStore = defineStore('character', () => {
 
       // 첫 번째 캐릭터인 경우 자동으로 선택
       if (characters.value.length === 1) {
-        await selectCharacter(newCharacter.id)
+        await selectCharacter(newCharacter.character_id)
       }
 
       return newCharacter
@@ -103,7 +103,7 @@ export const useCharacterStore = defineStore('character', () => {
       
       // 이전 활성 캐릭터의 is_active를 false로 변경
       characters.value.forEach(char => {
-        char.is_active = char.id === characterId
+        char.is_active = char.character_id === characterId
       })
 
       // 활성 캐릭터 업데이트
@@ -134,13 +134,13 @@ export const useCharacterStore = defineStore('character', () => {
       const updatedCharacter = await characterService.updateCharacter(characterId, data)
       
       // 목록에서 업데이트
-      const index = characters.value.findIndex(char => char.id === characterId)
+      const index = characters.value.findIndex(char => char.character_id === characterId)
       if (index !== -1) {
         characters.value[index] = updatedCharacter
       }
 
       // 활성 캐릭터인 경우 업데이트
-      if (activeCharacter.value?.id === characterId) {
+      if (activeCharacter.value?.character_id === characterId) {
         activeCharacter.value = updatedCharacter
       }
 
@@ -166,11 +166,11 @@ export const useCharacterStore = defineStore('character', () => {
       await characterService.deleteCharacter(characterId)
       
       // 목록에서 제거
-      characters.value = characters.value.filter(char => char.id !== characterId)
+      characters.value = characters.value.filter(char => char.character_id !== characterId)
       total.value -= 1
 
       // 활성 캐릭터인 경우 null로 설정
-      if (activeCharacter.value?.id === characterId) {
+      if (activeCharacter.value?.character_id === characterId) {
         activeCharacter.value = null
       }
 
@@ -194,13 +194,13 @@ export const useCharacterStore = defineStore('character', () => {
       const response = await characterService.uploadAvatar(characterId, file)
       
       // 목록에서 캐릭터 찾아서 avatar_url 업데이트
-      const index = characters.value.findIndex(char => char.id === characterId)
+      const index = characters.value.findIndex(char => char.character_id === characterId)
       if (index !== -1) {
         characters.value[index].avatar_url = response.avatar_url
       }
 
       // 활성 캐릭터인 경우 업데이트
-      if (activeCharacter.value?.id === characterId) {
+      if (activeCharacter.value?.character_id === characterId) {
         activeCharacter.value.avatar_url = response.avatar_url
       }
 

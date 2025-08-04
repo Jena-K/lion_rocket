@@ -9,7 +9,12 @@
       "mcp__playwright__browser_snapshot",
       "mcp__playwright__browser_wait_for",
       "mcp__context7__resolve-library-id",
-      "mcp__context7__get-library-docs"
+      "mcp__context7__get-library-docs",
+      "Bash(ls:*)",
+      "Bash(rm:*)",
+      "Bash(python:*)",
+      "mcp__playwright__browser_press_key",
+      "mcp__playwright__browser_take_screenshot"
     ],
     "deny": []
   }

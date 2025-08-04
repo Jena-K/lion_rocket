@@ -40,11 +40,6 @@ class Settings(BaseSettings):
     JWT_EXPIRATION_HOURS: int = 24
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     
-    # Claude API
-    CLAUDE_API_KEY: Optional[str] = None
-    CLAUDE_MODEL: str = "claude-3-sonnet-20240229"
-    CLAUDE_MAX_TOKENS: int = 1000
-    CLAUDE_TEMPERATURE: float = 0.7
     
     # CORS
     ALLOWED_ORIGINS: Union[List[str], str] = ["http://localhost:3000", "http://localhost:5173", "http://localhost:8080"]

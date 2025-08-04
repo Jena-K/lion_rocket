@@ -2,13 +2,12 @@ import apiClient from './api.client'
 
 // Types
 export interface User {
-  id: number
+  user_id: number
   username: string
   email: string
   is_admin: boolean
   created_at: string
   total_chats?: number
-  total_tokens?: number
   last_active?: string
 }
 
@@ -24,22 +23,57 @@ export interface SystemStats {
   total_users: number
   active_users_today: number
   total_chats: number
-  total_messages: number
-  total_tokens_used: number
   average_tokens_per_user: number
 }
 
 export interface UserUsageStat {
-  id: number
+  stat_id: number
   user_id: number
   usage_date: string
   chat_count: number
-  total_tokens: number
   created_at: string
 }
 
 export interface ChatListResponse {
   items: any[]
+  total: number
+  page: number
+  pages: number
+  limit: number
+}
+
+export interface CharacterChatStats {
+  character_id: number
+  name: string
+  avatar_url?: string
+  chatCount: number
+  messageCount: number
+  lastChatDate: string
+  firstChatDate: string
+  avgMessagesPerChat: number
+  avgChatDuration: number
+}
+
+export interface ChatMessage {
+  message_id: number
+  user_id: number
+  character_id: number
+  role: string
+  content: string
+  created_at: string
+}
+
+export interface Chat {
+  chat_id: number
+  user_id: number
+  character_id: number
+  role: string
+  content: string
+  created_at: string
+}
+
+export interface ChatListResponse2 {
+  items: Chat[]
   total: number
   page: number
   pages: number
@@ -83,6 +117,24 @@ export const adminService = {
     await apiClient.delete(`/admin/users/${userId}`)
   },
 
+  // Chat History
+  async getUserCharacterStats(userId: number): Promise<CharacterChatStats[]> {
+    const response = await apiClient.get(`/admin/users/${userId}/characters`)
+    return response.data
+  },
+
+  async getUserChats2(
+    userId: number, 
+    characterId?: number, 
+    page = 1, 
+    limit = 100
+  ): Promise<ChatListResponse2> {
+    const response = await apiClient.get(`/admin/users/${userId}/chats`, {
+      params: { character_id: characterId, page, limit },
+    })
+    return response.data
+  },
+
   // System Statistics
   async getSystemStats(): Promise<SystemStats> {
     // Mock data for development - replace with actual API call when ready
@@ -91,8 +143,6 @@ export const adminService = {
         total_users: 1234,
         active_users_today: 87,
         total_chats: 5678,
-        total_messages: 45892,
-        total_tokens_used: 2456789,
         average_tokens_per_user: 1993
       })
     }

@@ -128,7 +128,7 @@ async def create_characters():
                 logger.error("Admin user not found! Please run the application first to create the admin user.")
                 return
             
-            logger.info(f"Found admin user: {admin_user.username} (ID: {admin_user.id})")
+            logger.info(f"Found admin user: {admin_user.username} (ID: {admin_user.user_id})")
             
             # Delete all existing characters
             logger.info("Deleting all existing characters...")
@@ -146,7 +146,7 @@ async def create_characters():
                     personality_tags=char_data["personality_tags"],
                     interest_tags=char_data["interest_tags"],
                     prompt=char_data["prompt"],
-                    created_by=admin_user.id,
+                    created_by=admin_user.user_id,
                     is_active=True
                 )
                 session.add(character)

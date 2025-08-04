@@ -1,9 +1,16 @@
 export interface User {
-  id: number
+  user_id: number
   username: string
   email: string
   is_admin: boolean
   created_at: string
+}
+
+export interface UserWithStats extends User {
+  total_chats: number
+  total_tokens: number
+  total_characters: number
+  total_prompts: number
 }
 
 export interface LoginCredentials {
@@ -34,7 +41,7 @@ export enum Gender {
 }
 
 export interface Character {
-  id: number
+  character_id: number  // Changed from 'id' to match backend API
   name: string
   gender: Gender
   intro: string
@@ -50,7 +57,6 @@ export interface Character {
   chat_count?: number
   total_messages?: number
   unique_users?: number
-  total_tokens?: number
   last_used?: string
 }
 

@@ -34,12 +34,8 @@ def get_avatar_path_from_filename(filename: str) -> Path:
     return UPLOAD_DIR / filename
 
 def create_character_response(character: Character) -> CharacterResponse:
-    """Create a CharacterResponse with properly formatted avatar_url"""
+    """Create a CharacterResponse with avatar_url"""
     response_data = character.__dict__.copy()
-    
-    # If avatar_url exists, format it as /avatars/{filename}
-    if character.avatar_url:
-        response_data['avatar_url'] = f"/avatars/{character.avatar_url}"
     
     # Map character_id to id for API response compatibility
     if 'character_id' in response_data:
@@ -179,9 +175,8 @@ async def get_character(
     if not character:
         raise HTTPException(status_code=404, detail="Character not found")
 
-    # Check ownership
-    if character.created_by != current_user.user_id:
-        raise HTTPException(status_code=403, detail="Access denied to this character")
+    # No ownership check needed - users can view any character for chatting
+    # Ownership check should only be enforced for update/delete operations
 
     return create_character_response(character)
 
@@ -265,9 +260,7 @@ async def select_character(
     if not character:
         raise HTTPException(status_code=404, detail="Character not found")
 
-    # Check ownership
-    if character.created_by != current_user.user_id:
-        raise HTTPException(status_code=403, detail="Only the creator can select this character")
+    # No ownership check needed - users can select any character for chatting
 
     # Deactivate all other characters for this user
     query = select(Character).where(

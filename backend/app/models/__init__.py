@@ -8,7 +8,7 @@ registered with SQLAlchemy's Base.
 from .base import Base
 from .user import User
 from .character import Character
-from .message import Message
+from .chat import Chat
 from .stats import UsageStat
 from .conversation_summary import ConversationSummary
 
@@ -17,7 +17,7 @@ __all__ = [
     "Base",
     "User",
     "Character", 
-    "Message",
+    "Chat",
     "UsageStat",
     "ConversationSummary"
 ]

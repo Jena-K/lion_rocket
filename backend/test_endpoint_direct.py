@@ -12,7 +12,7 @@ sys.path.insert(0, str(backend_dir))
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import select, func
-from app.models import User, Chat, UsageStat
+from app.models import User, Message, UsageStat
 from app.schemas.user import AdminUserResponse, AdminUserPaginatedResponse
 from app.core.config import settings
 import traceback

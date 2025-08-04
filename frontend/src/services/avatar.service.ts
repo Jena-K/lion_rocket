@@ -1,5 +1,6 @@
 /**
- * Avatar Service - Handles avatar URL generation and management
+ * Avatar Service - avatar_url을 사용하여 이미지 표시
+ * 백엔드에서 받은 avatar_url을 사용하여 /images/avatars/{avatar_url} 형식으로 이미지 표시
  */
 
 // Get API base URL from environment
@@ -7,39 +8,23 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 export class AvatarService {
   /**
-   * Generate full avatar URL from relative path
+   * Generate full avatar image URL from avatar_url
+   * Uses the new /images/avatars/{avatar_url} endpoint
    */
-  static getAvatarUrl(avatarPath: string | undefined | null): string | null {
-    if (!avatarPath) {
+  static getAvatarUrl(avatarUrl: string | undefined | null): string | null {
+    if (!avatarUrl) {
       return null
     }
 
-    // If avatarPath is already a full URL, return as is
-    if (avatarPath.startsWith('http://') || avatarPath.startsWith('https://')) {
-      return avatarPath
+    // If avatarUrl is already a full URL, return as is
+    if (avatarUrl.startsWith('http://') || avatarUrl.startsWith('https://')) {
+      return avatarUrl
     }
 
-    // If avatarPath starts with /, it's already a relative path from root
-    if (avatarPath.startsWith('/')) {
-      return `${API_BASE_URL}${avatarPath}`
-    }
-
-    // Otherwise, add the slash prefix
-    return `${API_BASE_URL}/${avatarPath}`
+    // Generate URL using the backend's /images/avatars/{avatar_url} endpoint
+    return `${API_BASE_URL}/images/avatars/${avatarUrl}`
   }
 
-  /**
-   * Check if an avatar URL is valid and accessible
-   */
-  static async validateAvatarUrl(url: string): Promise<boolean> {
-    try {
-      const response = await fetch(url, { method: 'HEAD' })
-      return response.ok
-    } catch (error) {
-      console.warn('Avatar URL validation failed:', url, error)
-      return false
-    }
-  }
 
   /**
    * Get placeholder avatar based on character data
@@ -55,6 +40,9 @@ export class AvatarService {
   static handleAvatarError(event: Event) {
     const imgElement = event.target as HTMLImageElement
     if (imgElement) {
+      const src = imgElement.src
+      console.warn(`Avatar image failed to load: ${src}`)
+      
       // Hide the broken image
       imgElement.style.display = 'none'
       
@@ -64,6 +52,19 @@ export class AvatarService {
       if (placeholder && placeholder instanceof HTMLElement) {
         placeholder.style.display = 'flex'
       }
+    }
+  }
+
+  /**
+   * Check if an avatar URL is valid and accessible
+   */
+  static async validateAvatarUrl(url: string): Promise<boolean> {
+    try {
+      const response = await fetch(url, { method: 'HEAD' })
+      return response.ok
+    } catch (error) {
+      console.warn('Avatar URL validation failed:', url, error)
+      return false
     }
   }
 
@@ -83,8 +84,8 @@ export class AvatarService {
 // Export singleton methods for easier usage
 export const {
   getAvatarUrl,
-  validateAvatarUrl,
   getPlaceholderAvatar,
   handleAvatarError,
+  validateAvatarUrl,
   preloadAvatar
 } = AvatarService

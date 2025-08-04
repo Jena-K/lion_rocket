@@ -39,7 +39,7 @@ class CharacterUpdate(BaseModel):
 
 class CharacterResponse(CharacterBase):
     """Schema for character response"""
-    id: int
+    character_id: int
     created_by: int
     is_active: bool
     created_at: datetime
@@ -52,7 +52,7 @@ class CharacterResponse(CharacterBase):
 class CharacterWithStats(CharacterResponse):
     """Character response with usage statistics"""
     chat_count: int = 0
-    total_messages: int = 0
+    total_chats: int = 0
     last_used: Optional[datetime] = None
 
 

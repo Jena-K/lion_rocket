@@ -147,7 +147,7 @@ const handleSubmit = async () => {
 
   loading.value = true
   try {
-    await characterStore.updateCharacter(props.character.id, formData)
+    await characterStore.updateCharacter(props.character.character_id, formData)
     emit('updated')
   } catch (error) {
     console.error('Failed to update character:', error)

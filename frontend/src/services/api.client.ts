@@ -34,8 +34,8 @@ apiClient.interceptors.request.use(
     config.headers['X-Correlation-ID'] = requestId
 
     // Add user ID if available
-    if (authStore.user?.id) {
-      config.headers['X-User-ID'] = authStore.user.id.toString()
+    if (authStore.user?.user_id) {
+      config.headers['X-User-ID'] = authStore.user.user_id.toString()
     }
 
     // Log request in development

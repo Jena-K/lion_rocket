@@ -3,15 +3,12 @@ Admin-specific middleware for enhanced security, logging, and monitoring
 """
 import json
 import time
-from typing import Callable, Optional
+from typing import Callable
 from datetime import datetime
 from fastapi import Request, Response, HTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.types import ASGIApp
 import logging
-from app.database import AsyncSessionLocal
-from app.models import User
-from sqlalchemy import select
 from jose import jwt, JWTError
 from app.core.config import settings
 

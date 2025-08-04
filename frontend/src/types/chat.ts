@@ -20,19 +20,6 @@ export interface MessageCreate {
   character_id: number
 }
 
-export interface ChatSession {
-  id: number
-  user_id: number
-  character_id: number
-  title?: string
-  created_at: string
-  last_chat_at?: string
-}
-
-export interface ConversationEndResponse {
-  message: string
-  summary_created: boolean
-}
 
 export interface ChatMessageResponse {
   user_message: Message

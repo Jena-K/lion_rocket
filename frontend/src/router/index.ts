@@ -8,7 +8,6 @@ const ChatView = () => import('../views/ChatView.vue')
 const AdminLoginView = () => import('../views/AdminLoginView.vue')
 const AdminDashboard = () => import('../views/AdminDashboard.vue')
 const CharacterSelectionView = () => import('../views/CharacterSelectionView.vue')
-const UserProfile = () => import('../views/UserProfile.vue')
 
 // Admin components
 const UserManagement = () => import('../views/admin/UserManagement.vue')
@@ -49,12 +48,6 @@ export const routes: RouteRecordRaw[] = [
     path: '/chat/:characterId',
     name: 'chat',
     component: ChatView,
-    meta: { requiresAuth: true },
-  },
-  {
-    path: '/profile',
-    name: 'user-profile',
-    component: UserProfile,
     meta: { requiresAuth: true },
   },
   {

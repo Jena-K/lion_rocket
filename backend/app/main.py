@@ -7,23 +7,17 @@ import uvicorn
 import logging
 from pathlib import Path
 
-from app.routers import auth, chat_no_sse as chat, character, admin
+from app.routers import auth, chat, character, admin
 from app.database import create_tables
 from app.middleware import (
     # Rate limiting
     limiter,
     RateLimitExceeded,
     _rate_limit_exceeded_handler,
-    # Other middleware
-    RequestIDMiddleware,
-    TimingMiddleware,
-    LoggingMiddleware,
-    SecurityHeadersMiddleware,
-    RequestSizeLimitMiddleware,
-    APISecurityMiddleware,
     # Admin middleware
     add_admin_middleware,
 )
+from app.middleware.core import CoreMiddleware, RequestSizeMiddleware
 
 from app.core.config import settings
 
@@ -44,36 +38,28 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-# Add middleware in proper order (order matters!)
-# 1. Request ID - Should be first to assign IDs
-app.add_middleware(RequestIDMiddleware)
+# Add unified middleware (simplified for assignment environment)
+# 1. Request size limit - Should be first to reject large requests
+app.add_middleware(RequestSizeMiddleware, max_size=5 * 1024 * 1024)
 
-# 2. Request size limit - Should be early to reject large requests
-app.add_middleware(RequestSizeLimitMiddleware, max_size=5 * 1024 * 1024)  # 5MB limit
-
-# 3. Security headers - Add security headers to all responses
-app.add_middleware(SecurityHeadersMiddleware)
-
-# 4. API Security - Custom API headers
-app.add_middleware(APISecurityMiddleware, api_version="1.0.0")
-
-# 5. CORS - Must be before authentication
-# Specific CORS configuration to resolve SSE credentials issue
+# 2. CORS - Must be before other processing
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for development
-    allow_credentials=False,  # Disable credentials when using wildcard
-    allow_methods=["*"],  # Allow all methods
-    allow_headers=["*"],  # Allow all headers
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:3000", 
+        "http://localhost:8080",
+        "http://127.0.0.1:5173"
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-# 6. Timing - Measure response times
-app.add_middleware(TimingMiddleware)
+# 3. Core middleware - Unified request ID, logging, timing, and security
+app.add_middleware(CoreMiddleware, api_version="1.0.0")
 
-# 7. Logging - Log all requests (should be after ID assignment)
-app.add_middleware(LoggingMiddleware)
-
-# 8. Admin-specific middleware - Enhanced security and logging for admin endpoints
+# 4. Admin-specific middleware - Enhanced security for admin endpoints
 add_admin_middleware(app)
 
 
@@ -111,8 +97,8 @@ async def general_exception_handler(request: Request, exc: Exception):
     import traceback
     error_detail = f"Unhandled exception in {request.method} {request.url}: {str(exc)}"
     logger.error(error_detail, exc_info=True)
-    print(f"[ERROR] {error_detail}")
-    print(f"[ERROR] Traceback: {traceback.format_exc()}")
+    # Log error details
+    # Log traceback details
     return JSONResponse(status_code=500, content={"detail": f"Internal server error: {str(exc)}", "status": 500})
 
 
@@ -226,150 +212,6 @@ async def serve_avatar_image(avatar_url: str):
     )
 
 
-@app.get("/images/avatar/{parameter}")
-async def serve_avatar_generic(parameter: str):
-    """
-    Serve avatar images from /backend/uploads/avatars/{parameter}.png
-    
-    This endpoint serves avatar PNG images based on a generic parameter.
-    The frontend can access avatars using: GET /images/avatar/{parameter}
-    
-    Args:
-        parameter: The avatar identifier (without .png extension)
-        
-    Returns:
-        FileResponse: The avatar image file (PNG format)
-        
-    Raises:
-        HTTPException: 400 if parameter is invalid, 404 if file not found
-    """
-    from fastapi import HTTPException
-    import re
-    import os
-    
-    # Relaxed validation for educational purposes
-    
-    # Prevent path traversal attacks
-    if '..' in parameter or '/' in parameter or '\\' in parameter:
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid parameter. Path traversal not allowed."
-        )
-    
-    # Construct the full path to the avatar file - using absolute path from backend root
-    backend_root = Path(__file__).parent.parent  # Goes up from app/main.py to backend/
-    avatar_path = backend_root / "uploads" / "avatars" / f"{parameter}.png"
-    
-    # Ensure the path is within the allowed directory
-    try:
-        avatar_path = avatar_path.resolve()
-        uploads_dir = (backend_root / "uploads" / "avatars").resolve()
-        if not str(avatar_path).startswith(str(uploads_dir)):
-            raise HTTPException(
-                status_code=400,
-                detail="Invalid avatar path"
-            )
-    except Exception:
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid avatar path"
-        )
-    
-    # Check if file exists
-    if not avatar_path.exists():
-        raise HTTPException(
-            status_code=404, 
-            detail=f"Avatar image not found: {parameter}.png"
-        )
-    
-    # Check if it's actually a file (not a directory)
-    if not avatar_path.is_file():
-        raise HTTPException(
-            status_code=404,
-            detail="Avatar path is not a file"
-        )
-    
-    return FileResponse(
-        path=str(avatar_path),
-        media_type="image/png",
-        filename=f"{parameter}.png",
-        headers={
-            "Cache-Control": "public, max-age=3600",  # Cache for 1 hour
-            "X-Content-Type-Options": "nosniff",
-            "Access-Control-Allow-Origin": "*",  # Allow cross-origin requests for images
-            "Access-Control-Allow-Methods": "GET",
-            "Access-Control-Allow-Headers": "Content-Type"
-        }
-    )
-
-
-@app.get("/avatars/{avatar_filename}")
-async def serve_avatar(avatar_filename: str):
-    """
-    Serve avatar images
-    
-    This endpoint serves character avatar images stored in the uploads/avatars directory.
-    The frontend can access avatars using: GET /avatars/{avatar_filename}
-    
-    Args:
-        avatar_filename: The avatar filename (without extension)
-        
-    Returns:
-        FileResponse: The avatar image file (PNG format)
-        
-    Raises:
-        HTTPException: 400 if path traversal detected, 404 if file not found
-    """
-    from fastapi import HTTPException
-    
-    # Prevent path traversal attacks
-    if '..' in avatar_filename or '/' in avatar_filename or '\\' in avatar_filename:
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid avatar filename. Path traversal not allowed."
-        )
-    
-    # Construct the full path to the avatar file
-    avatar_path = Path("app/uploads/avatars") / f"{avatar_filename}.png"
-    
-    # Ensure the path is within the allowed directory
-    try:
-        avatar_path = avatar_path.resolve()
-        uploads_dir = Path("app/uploads/avatars").resolve()
-        if not str(avatar_path).startswith(str(uploads_dir)):
-            raise HTTPException(
-                status_code=400,
-                detail="Invalid avatar path"
-            )
-    except Exception:
-        raise HTTPException(
-            status_code=400,
-            detail="Invalid avatar path"
-        )
-    
-    # Check if file exists
-    if not avatar_path.exists():
-        raise HTTPException(
-            status_code=404, 
-            detail="Avatar image not found"
-        )
-    
-    # Check if it's actually a file (not a directory)
-    if not avatar_path.is_file():
-        raise HTTPException(
-            status_code=404,
-            detail="Avatar path is not a file"
-        )
-    
-    return FileResponse(
-        path=str(avatar_path),
-        media_type="image/png",
-        filename=f"avatar_{avatar_filename}.png",
-        headers={
-            "Cache-Control": "public, max-age=3600",  # Cache for 1 hour
-            "X-Content-Type-Options": "nosniff"
-        }
-    )
 
 
 if __name__ == "__main__":

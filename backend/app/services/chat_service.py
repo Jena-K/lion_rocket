@@ -1,8 +1,8 @@
 from datetime import datetime, date
-from typing import Optional, List, Dict
+from typing import Optional, List
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, and_
-from app.models import Chat, UsageStat, ConversationSummary
+from sqlalchemy import select, func
+from app.models import Chat, UsageStat
 from app.schemas.chat import ChatRole
 # Real Claude API integration through claude_service
 
@@ -99,5 +99,3 @@ class ChatService:
         return list(reversed(chats))
 
 
-# Create singleton instance
-chat_service = ChatService()

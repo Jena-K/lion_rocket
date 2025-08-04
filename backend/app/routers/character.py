@@ -6,6 +6,7 @@ from sqlalchemy import select, or_, and_, func
 import aiofiles
 import os
 import uuid
+import logging
 from datetime import datetime
 from pathlib import Path
 
@@ -21,6 +22,7 @@ from app.schemas.character import (
 )
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 # Upload directory for character avatars
 UPLOAD_DIR = Path("app/uploads/avatars")
@@ -238,7 +240,7 @@ async def delete_character(
                 avatar_path.unlink()
             except Exception as e:
                 # Log error but don't fail the deletion
-                print(f"Failed to delete avatar file during character deletion: {e}")
+                logger.warning(f"Failed to delete avatar file during character deletion: {e}")
 
     await db.delete(character)
     await db.commit()
@@ -415,7 +417,7 @@ async def delete_character_avatar(
             avatar_path.unlink()
         except Exception as e:
             # Log error but continue with database update
-            print(f"Failed to delete avatar file: {e}")
+            logger.warning(f"Failed to delete avatar file: {e}")
     
     # Clear avatar_url and update timestamp
     character.avatar_url = None

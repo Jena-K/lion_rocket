@@ -10,7 +10,6 @@
       </div>
       <div class="header-right">
         <span class="user-info">{{ authStore.user?.username }}</span>
-        <button @click="goToProfile" class="profile-btn">프로필</button>
         <button @click="handleLogout" class="logout-btn">로그아웃</button>
       </div>
     </header>
@@ -187,9 +186,6 @@ const handleLogout = async () => {
   router.push('/login')
 }
 
-const goToProfile = () => {
-  router.push('/profile')
-}
 
 const handleStartChat = async () => {
   console.log('handleStartChat called')
@@ -230,7 +226,6 @@ const closeModal = () => {
 
 // Transform API character to Extended character
 const transformCharacter = (char: Character): ExtendedCharacter => {
-  console.log('Transforming character:', char) // Debug log
   return {
     ...char,
     introduction: char.intro,
@@ -354,22 +349,6 @@ onMounted(() => {
 }
 
 
-.profile-btn {
-  padding: 0.5rem 1rem;
-  background: #E7F7E1;
-  color: #5A8F47;
-  border: 1px solid #B8EEA2;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 0.875rem;
-  transition: all 0.2s;
-}
-
-.profile-btn:hover {
-  background: #D4EFCB;
-  border-color: #9FE88D;
-  transform: translateY(-1px);
-}
 
 .logout-btn {
   padding: 0.5rem 1rem;

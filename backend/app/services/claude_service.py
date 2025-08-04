@@ -21,16 +21,16 @@ class ClaudeService:
                 self.model = "claude-3-haiku-20240307"  # Claude 3 Haiku model
                 self.max_tokens = 1000
                 self.api_available = True
-                print(f"[OK] Claude API service initialized successfully with key: {api_key[:20]}...")
-                print(f"[OK] Using model: {self.model}")
+                # Claude API service initialized successfully
+                # Using configured Claude model
             except Exception as e:
-                print(f"[ERROR] Failed to initialize Claude API client: {str(e)}")
+                # Failed to initialize Claude API client
                 self.client = None
                 self.api_available = False
         else:
             self.client = None
             self.api_available = False
-            print("[WARNING] Claude API key not found. All responses will be fallback messages.")
+            # Claude API key not found, using fallback responses
     
     async def generate_response(
         self,
@@ -74,12 +74,7 @@ class ClaudeService:
             return content, token_usage
             
         except Exception as e:
-            print(f"[ERROR] Claude API error: {type(e).__name__}: {str(e)}")
-            # Log more details for debugging
-            if hasattr(e, 'response'):
-                print(f"[ERROR] Response status: {getattr(e.response, 'status_code', 'N/A')}")
-                print(f"[ERROR] Response body: {getattr(e.response, 'text', 'N/A')}")
-            # Return fallback response with estimated token usage
+            # Claude API error occurred - return fallback response with estimated token usage
             return await self._generate_fallback_response(messages)
     
     async def _generate_fallback_response(self, messages: List[Dict[str, str]]) -> Tuple[str, int]:

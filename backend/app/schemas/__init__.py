@@ -19,10 +19,7 @@ from .character import (
 
 # Chat schemas
 from .chat import (
-    ChatRole, ChatCreate, ChatResponse,
-    ChatListResponse, ChatPaginatedResponse,
-    ChatSessionCreate, ChatSessionResponse,
-    ChatSessionCreateWithChat, ChatInSession, ChatSessionWithChats
+    ChatRole, ChatCreate, ChatResponse, ChatMessageResponse
 )
 
 # Stats schemas
@@ -52,5 +49,3 @@ __all__ = [
     "AdminStatsResponse", "UsageStatResponse"
 ]
 
-# Rebuild models to resolve forward references
-ChatSessionWithChats.model_rebuild()

@@ -1,4 +1,4 @@
-# Middleware package
+# Unified Middleware package for assignment environment
 from .rate_limit import (
     limiter,
     rate_limit,
@@ -6,11 +6,6 @@ from .rate_limit import (
     RateLimitExceeded,
     _rate_limit_exceeded_handler,
 )
-from .logging import LoggingMiddleware, AccessLogMiddleware
-from .request_id import RequestIDMiddleware, get_request_id
-from .timing import TimingMiddleware, PerformanceMiddleware
-from .security import SecurityHeadersMiddleware, APISecurityMiddleware
-from .validation import RequestSizeLimitMiddleware, ContentTypeValidationMiddleware
 from .admin import (
     AdminAuditLogMiddleware,
     AdminRateLimitMiddleware,
@@ -18,6 +13,7 @@ from .admin import (
     AdminRequestValidationMiddleware,
     add_admin_middleware,
 )
+from .core import CoreMiddleware, RequestSizeMiddleware
 
 __all__ = [
     # Rate limiting
@@ -26,22 +22,10 @@ __all__ = [
     "chat_rate_limit",
     "RateLimitExceeded",
     "_rate_limit_exceeded_handler",
-    # Logging
-    "LoggingMiddleware",
-    "AccessLogMiddleware",
-    # Request ID
-    "RequestIDMiddleware",
-    "get_request_id",
-    # Timing
-    "TimingMiddleware",
-    "PerformanceMiddleware",
-    # Security
-    "SecurityHeadersMiddleware",
-    "APISecurityMiddleware",
-    # Validation
-    "RequestSizeLimitMiddleware",
-    "ContentTypeValidationMiddleware",
-    # Admin
+    # Core unified middleware
+    "CoreMiddleware",
+    "RequestSizeMiddleware",
+    # Admin middleware
     "AdminAuditLogMiddleware",
     "AdminRateLimitMiddleware",
     "AdminSecurityMiddleware",

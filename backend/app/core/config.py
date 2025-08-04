@@ -13,18 +13,16 @@ ENV_FILE = BACKEND_DIR / ".env"
 # Load .env file explicitly
 if ENV_FILE.exists():
     load_dotenv(ENV_FILE)
-    print(f"Loaded .env from: {ENV_FILE}")
-else:
-    print(f"Warning: .env file not found at {ENV_FILE}")
 
 
 class Settings(BaseSettings):
-    """Application settings loaded from environment variables"""
+    """Unified application settings for development and assignment environments"""
     
     # Application
     APP_NAME: str = "LionRocket"
     APP_VERSION: str = "1.0.0"
-    DEBUG: bool = True
+    DEBUG: bool = True  # Always enabled for assignment environment
+    ENVIRONMENT: str = "development"  # assignment|development|production
     
     # Server
     HOST: str = "0.0.0.0"
@@ -34,8 +32,8 @@ class Settings(BaseSettings):
     DATABASE_URL: str = "sqlite:///./data/lionrocket.db"
     
     # Security
-    SECRET_KEY: str = "g2FcqkMCHPVJD1uoRWsY4XAbE875LzN9"
-    JWT_SECRET: str = "g2FcqkMCHPVJD1uoRWsY4XAbE875LzN9"
+    SECRET_KEY: str = "your-secret-key-here"
+    JWT_SECRET: str = "your-jwt-secret-here"
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRATION_HOURS: int = 24
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
@@ -56,11 +54,11 @@ class Settings(BaseSettings):
     
     # Admin
     DEFAULT_ADMIN_USERNAME: str = "admin"
-    DEFAULT_ADMIN_EMAIL: str = "admin@lionrocket.com"
-    DEFAULT_ADMIN_PASSWORD: str = "P@ssw0rd1@"
+    DEFAULT_ADMIN_EMAIL: str = "admin@example.com"
+    DEFAULT_ADMIN_PASSWORD: str = "admin123"
     
     # Claude API
-    CLAUDE_API_KEY: Optional[str] = "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"
+    CLAUDE_API_KEY: Optional[str] = None  # Set via environment variable
     
     # Logging
     LOG_LEVEL: str = "INFO"
